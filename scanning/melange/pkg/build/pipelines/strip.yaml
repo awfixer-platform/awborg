@@ -1,0 +1,23 @@
+name: Strip binaries
+
+needs:
+  packages:
+    - binutils
+    - scanelf
+
+inputs:
+  opts:
+    description: |
+      The option flags to pass to the strip command.
+    default: -g
+
+pipeline:
+  - working-directory: ${{targets.contextdir}}
+    runs: |
+      scanelf --recursive --nobanner --osabi --etype "ET_DYN,ET_EXEC" . \
+        | while read type osabi filename; do
+
+        [ "$osabi" != "STANDALONE" ] || continue
+        # scanelf may have picked up a temp file so verify that file still exists
+        strip ${{inputs.opts}} "${filename}" || [ ! -e "$filename" ]
+      done

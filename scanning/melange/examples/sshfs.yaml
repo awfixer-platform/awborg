@@ -1,0 +1,43 @@
+package:
+  name: sshfs
+  version: 3.7.2
+  epoch: 0
+  description: "FUSE client based on the SSH File Transfer Protocol"
+  copyright:
+    - attestation: |
+        Copyright (C) 2004 Miklos Szeredi <miklos@szeredi.hu>
+      license: GPL-2.0-or-later
+  dependencies:
+    runtime:
+
+environment:
+  contents:
+    repositories:
+      - https://packages.wolfi.dev/os
+    keyring:
+      - https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
+    packages:
+      - build-base
+      - busybox
+      - coreutils
+      - fuse3-dev
+      - glib-dev
+      - py3-docutils
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/libfuse/sshfs
+
+  - uses: meson/configure
+
+  - uses: meson/compile
+
+  - uses: meson/install
+
+  - uses: strip
+
+subpackages:
+  - name: "sshfs-doc"
+    pipeline:
+      - uses: split/manpages

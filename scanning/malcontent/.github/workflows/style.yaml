@@ -1,0 +1,149 @@
+# Copyright 2024 Chainguard, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+name: Code Style
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches:
+      - "main"
+  push:
+    branches:
+      - "main"
+
+jobs:
+  yrcompile:
+    name: check yr compile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Run make yara-x-compile
+        run: |
+          make yara-x-compile
+          ret=$?
+          if [[ $ret -ne 0 ]]; then
+            echo "Rule compilation failed; address findings and commit the changes"
+            exit 1
+          fi
+
+  yrfmt:
+    name: check yr fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install yara-x
+        run: |
+          wget https://github.com/VirusTotal/yara-x/releases/download/v0.10.0/yara-x-v0.10.0-x86_64-unknown-linux-gnu.gzip -O yara-x.gzip
+          tar -xzvf yara-x.gzip && mv yr /usr/local/bin/ && rm yara-x.gzip
+      - name: Verify yr installation
+        run: |
+          yr --version
+      - name: Run yr fmt
+        run: |
+          find rules -type f -name "*.yara" | xargs -n 1 -I {} yr fmt {}
+          if [[ -n $(git status -s) ]]; then
+            echo "Rule files updated; please run yr fmt locally and commit the changes"
+            exit 1
+          fi
+
+  gofmt:
+    name: check gofmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - uses: chainguard-dev/actions/gofmt@de56c2728beb0a0f371bff2ce2ee4b8afee4b5e8 # main
+        with:
+          args: -s
+
+  goimports:
+    name: check goimports
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - uses: chainguard-dev/actions/goimports@de56c2728beb0a0f371bff2ce2ee4b8afee4b5e8 # main
+
+  golangci-lint:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    container:
+      image: cgr.dev/chainguard/wolfi-base:latest
+      options: >-
+        --cap-add DAC_OVERRIDE
+        --cap-add SETGID
+        --cap-add SETUID
+        --cap-drop ALL
+        --cgroupns private
+        --cpu-shares=4096
+        --memory-swappiness=0
+        --security-opt no-new-privileges
+        --ulimit core=0
+        --ulimit nofile=4096:4096
+        --ulimit nproc=4096:4096
+    steps:
+      - name: Install dependencies
+        run: |
+          apk update
+          apk add curl findutils git go nodejs yara-x
+
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Trust repository
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Run golangci-lint
+        run: |
+          make golangci-lint-lint

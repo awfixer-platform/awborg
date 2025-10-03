@@ -1,0 +1,13 @@
+# npm/2024.harthat/deference.js: critical
+c2/addr/ip: high
+c2/addr/url: high
+c2/tool_transfer/os: low
+discover/system/platform: medium
+evasion/indicator_blocking/echo_off: high
+fs/file/delete: medium
+fs/file/write: low
+impact/remote_access/dll_injection: critical
+net/download/fetch: critical
+net/http: low
+net/url/embedded: medium
+process/create: medium

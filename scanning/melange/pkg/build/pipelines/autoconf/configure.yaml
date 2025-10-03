@@ -1,0 +1,47 @@
+name: Run autoconf configure script
+
+needs:
+  packages:
+    - autoconf
+    - automake
+
+inputs:
+  dir:
+    description: |
+      The directory containing the configure script.
+    default: .
+
+  host:
+    description: |
+      The GNU triplet which describes the host system.
+    default: ${{host.triplet.gnu}}
+
+  build:
+    description: |
+      The GNU triplet which describes the build system.
+    default: ${{host.triplet.gnu}}
+
+  opts:
+    description: |
+      Options to pass to the ./configure command.
+    default: ''
+
+pipeline:
+  - runs: |
+      cd ${{inputs.dir}}
+
+      # Attempt to generate configuration if one does not exist
+      if [[ ! -f ./configure && -f ./configure.ac ]]; then
+          autoreconf -vfi
+      fi
+
+      ./configure \
+        --host=${{inputs.host}} \
+        --build=${{inputs.build}} \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --libdir=/usr/lib \
+        --mandir=/usr/share/man \
+        --infodir=/usr/share/info \
+        --localstatedir=/var \
+        ${{inputs.opts}}

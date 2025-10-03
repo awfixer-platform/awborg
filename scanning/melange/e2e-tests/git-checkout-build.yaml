@@ -1,0 +1,295 @@
+package:
+  name: test-git-checkout
+  version: 6.14
+  epoch: 0
+  description: This package mainly just tests git-checkout pipeline
+
+environment:
+  contents:
+    packages:
+      - busybox
+      - git
+
+vars:
+  workd: /tmp/test-git-checkout-workd
+  giturl: "file:///tmp/test-git-checkout-workd/repos/my-repo"
+
+pipeline:
+  - name: "Create the bogus package content"
+    runs: |
+      echo "package does not do anything" > "${{targets.contextdir}}/README"
+
+  - name: "Create a git repo"
+    runs: |
+      rm -Rf ${{vars.workd}}
+      mkdir -p ${{vars.workd}}/repos
+      repo=${{vars.workd}}/repos/my-repo
+
+      ./create-git-repo "$repo"
+      touch "$repo/git-daemon-export-ok"
+
+  - name: "standard tag on branch"
+    uses: git-checkout
+    working-directory: standard
+    with:
+      repository: ${{vars.giturl}}
+      tag: 2.0
+      expected-commit: 3dfc3dd573b814be48c07f7f8ae3c19a23b69865
+
+  - name: "check standard tag on branch"
+    working-directory: standard
+    runs: |
+      hash=$(git rev-parse --verify HEAD)
+      [ "$hash" = 3dfc3dd573b814be48c07f7f8ae3c19a23b69865 ]
+      cd ..
+      rm -Rf standard
+
+  - name: "standard no-working-directory"
+    uses: git-checkout
+    with:
+      repository: ${{vars.giturl}}
+      tag: 2.0
+      expected-commit: 3dfc3dd573b814be48c07f7f8ae3c19a23b69865
+
+  - name: "check standard no-working-directory"
+    runs: |
+      hash=$(git rev-parse --verify HEAD)
+      [ "$hash" = 3dfc3dd573b814be48c07f7f8ae3c19a23b69865 ]
+      [ -f create-git-repo ] ||
+         { echo "create-git-repo did not exist"; exit 1; }
+
+  - name: "destination"
+    uses: git-checkout
+    working-directory: destination-base
+    with:
+      repository: ${{vars.giturl}}
+      tag: 2.0
+      expected-commit: 3dfc3dd573b814be48c07f7f8ae3c19a23b69865
+      destination: dest
+
+  - name: "check destination"
+    working-directory: destination-base
+    runs: |
+      cd dest
+      hash=$(git rev-parse --verify HEAD)
+      [ "$hash" = 3dfc3dd573b814be48c07f7f8ae3c19a23b69865 ]
+      cd ../..
+      rm -R destination-base
+
+  - name: "depth positive 1"
+    uses: git-checkout
+    working-directory: depth-positive-1
+    with:
+      depth: 1
+      repository: ${{vars.giturl}}
+      tag: 2.0
+      expected-commit: 3dfc3dd573b814be48c07f7f8ae3c19a23b69865
+
+  - name: "check depth positive 1"
+    working-directory: depth-positive-1
+    runs: |
+      if out=$(git show HEAD^ 2>&1); then
+          echo "FAIL: git show HEAD^ should not pass on checkout with depth 1"
+          echo "git show HEAD^ output: $output"
+          exit 1
+      fi
+      hash=$(git rev-parse --verify HEAD)
+      [ "$hash" = 3dfc3dd573b814be48c07f7f8ae3c19a23b69865 ]
+      cd ..
+      rm -R depth-positive-1
+
+  - name: "depth negative 1"
+    working-directory: depth-negative-1
+    uses: git-checkout
+    with:
+      depth: -1
+      repository: ${{vars.giturl}}
+      tag: 2.0
+      expected-commit: 3dfc3dd573b814be48c07f7f8ae3c19a23b69865
+
+  - name: "check depth -1"
+    working-directory: depth-negative-1
+    runs: |
+      out=$(git show HEAD^ 2>&1) || {
+          echo "FAIL: git show HEAD^ failed on depth -1 checkout"
+          echo "git show HEAD^ output: $output"
+          exit 1
+      }
+      hash=$(git rev-parse --verify HEAD)
+      [ "$hash" = 3dfc3dd573b814be48c07f7f8ae3c19a23b69865 ]
+      cd ..
+      rm -R depth-negative-1
+
+  - name: "branch without expected"
+    working-directory: branch-no-expected
+    uses: git-checkout
+    with:
+      repository: ${{vars.giturl}}
+      branch: 1.x
+
+  - name: "check branch without expected"
+    working-directory: branch-no-expected
+    runs: |
+      hash=$(git rev-parse --verify HEAD)
+      [ "$hash" = 4b1593d8d8038f8c0ce1e2c608c9dd89066a2a0f ]
+      cd ..
+      rm -R branch-no-expected
+
+  - name: "branch with old expected"
+    working-directory: branch-old-expected
+    uses: git-checkout
+    with:
+      repository: ${{vars.giturl}}
+      branch: 1.x
+      # 21cfbec is on the 1.x branch but is not current.
+      expected-commit: 21cfbec4b951b9a0ba0a3bd9365fbb4fe81fa78d
+
+  - name: "check branch with old expected"
+    working-directory: branch-old-expected
+    runs: |
+      hash=$(git rev-parse --verify HEAD)
+      [ "$hash" = 21cfbec4b951b9a0ba0a3bd9365fbb4fe81fa78d ]
+      cd ..
+      rm -R branch-old-expected
+
+  # for an annotated tag you can point to either the commit
+  # or the tag object hash object
+  - name: "annotated hash"
+    uses: git-checkout
+    working-directory: annotated-hash
+    with:
+      repository: ${{vars.giturl}}
+      tag: 2.0-annotated
+      expected-commit: 4ce5bdbf45a68a166d931dd1247878829b5c0113
+
+  - name: "check annotated hash"
+    working-directory: annotated-hash
+    runs: |
+      git show-ref --tags -d
+      hash=$(git rev-parse --verify HEAD)
+      [ "$hash" = 3dfc3dd573b814be48c07f7f8ae3c19a23b69865 ]
+      cd ..
+      rm -R annotated-hash
+
+  # special case with clone --branch if there is a tag and a branch
+  # with the same name.
+  - name: "tag and branch same name"
+    uses: git-checkout
+    working-directory: tag-and-branch
+    with:
+      repository: ${{vars.giturl}}
+      tag: dev
+      expected-commit: 2b9bb894348794bc840a2ee7553d54a1c80b9278
+
+  - name: "check tag and branch same name"
+    working-directory: tag-and-branch
+    runs: |
+      hash=$(git rev-parse --verify HEAD)
+      [ "$hash" = 2b9bb894348794bc840a2ee7553d54a1c80b9278 ]
+      cd ..
+      rm -R tag-and-branch
+
+  - name: "process cherry-picks"
+    uses: git-checkout
+    working-directory: cherry-pick-test
+    with:
+      repository: ${{vars.giturl}}
+      branch: 1.x
+      cherry-picks: |
+        main/582b4d7d62f1c512568649ce8b6db085a3d85a9f: here comment
+
+  - name: "check cherry-picks"
+    working-directory: cherry-pick-test
+    runs: |
+      hash=$(git rev-parse --verify HEAD)
+      expected_hash="225e712ae452645acbd8f137b13d6b1ded8a96a1"
+      [ "$hash" != "$expected_hash" ]
+      cd ..
+      rm -R cherry-pick-test
+
+  # When ownership of files created inside and outside of the runner container do not
+  # match, if mode is restrictive on files like 0700 on the Melange workspace, if the git-checkout
+  # pipeline changes ownership on them, being that it runs inside the runner container, subsequent
+  # filesystem operations run outside of the runner fail because of missing permissions.
+  # This happens specifically with tar --extract without preserving ownership of existing files,
+  # like '.', which in case of the default input and standard usage of the pipeline, is the
+  # workspace directory.
+  # This results in subsequent operations like xattrs restore to fail as they are run outside of
+  # the runner container.
+  #
+  # Bubblewrap runner:
+  #   Since the user namespace is unshared and that the runner uid is mapped to the
+  #   uid of the user who runs Melange, ownership always match.
+  #   - Melange run by root -> runner user: root.
+  #     Owner of files created outside of the runner:
+  #       - host: root
+  #       - runner: root
+  #     Owner of files creted inside the runner:
+  #       - host: root
+  #       - runner: root
+  #   - Melange run by non-root -> runner user: build (1000 mapped to non-root).
+  #     Owner of files created outside of the runner:
+  #       - host: non-root
+  #       - runner: build (1000 -> host's non-root)
+  #     Owner of files creted inside the runner:
+  #       - host: non-root
+  #       - runner: build (1000 -> host's non-root)
+  #
+  # Docker runner:
+  #   Since the user namespace is shared, ownership between files created inside and
+  #   outside the runner, match only when the user who runs Melange is root.
+  #   - Melange run by root -> runner user: root.
+  #     Owner of files created outside of the runner:
+  #       - host: root
+  #       - runner: root
+  #     Owner of files creted inside the runner:
+  #       - host: root
+  #       - runner: root
+  #   - Melange run by non-root -> runner user: root.
+  #     Owner of files created outside of the runner:
+  #       - host: non-root
+  #       - runner: non-root
+  #     Owner of files creted inside the runner:
+  #       - host: root
+  #       - runner: root
+  #
+  # QEMU runner:
+  #   File ownership inside and outside of the runner VM always match.
+  #
+  - name: "check ownership of existing files"
+    runs: |
+      set -eu
+      runner_user=$(id -u)
+      melange_user=$(stat -c "%u" .)
+      expected_runner=""
+      expected_melange=""
+      if [[ $runner_user == $melange_user ]]; then
+        # Ownership of existing files match the ownership of files created within the runner
+        # (i.e. by the git-checkout pipeline tar --extract command).
+        expected_runner=48
+        expected_melange=2
+      else
+        # Ownership of existing files is not changed.
+        expected_runner=42
+        expected_melange=1
+      fi
+      exclude_args="! -regex ^\.\/\.ssh.*$ ! -regex ^./.gitconfig$"
+      found_runner=$(find . -user $runner_user $exclude_args | wc -l)
+      mismatch=""
+      if [[ $found_runner != $expected_runner ]]; then
+        echo "Expected $expected_runner files owned by the runner user $runner_user, found $found_runner"
+        find . -user $runner_user $exclude_args
+        echo "files owned by Melange user $melange_user:"
+        find . -user $melange_user $exclude_args
+        mismatch=true
+      fi
+      if [[ $melange_user != $runner_user ]]; then
+        found_melange=$(find . -user $melange_user $exclude_args | wc -l)
+        if [[ $found_runner != $expected_runner || $found_melange != $expected_melange ]]; then
+          echo "Expected $expected_melange files owned by $melange_user, found $found_melange"
+          find . -user $melange_user $exclude_args
+          mismatch=true
+        fi
+      fi
+      [[ $mismatch != "" ]] && exit 1
+

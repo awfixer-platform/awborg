@@ -1,0 +1,26 @@
+name: Configure project with meson
+
+needs:
+  packages:
+    - meson
+
+inputs:
+  output-dir:
+    description: |
+      The output directory for the Meson build.
+    default: output
+
+  opts:
+    description: |
+      Compile options for the Meson build.
+
+pipeline:
+  # Don't download subprojects by default. We want to use only the source
+  # provided by the project, and if any subprojects are needed we should
+  # provide them ourselves.
+  # Ref: https://mesonbuild.com/Subprojects.html#commandline-options
+  - runs: |
+      meson setup . ${{inputs.output-dir}} \
+        --prefix=/usr \
+        --wrap-mode=nodownload \
+        ${{inputs.opts}}
