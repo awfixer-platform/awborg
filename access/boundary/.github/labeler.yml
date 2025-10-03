@@ -1,0 +1,168 @@
+api:
+  - changed-files:
+    - any-glob-to-any-file: "api/**/*"
+
+api/authmethods:
+  - changed-files:
+    - any-glob-to-any-file: "api/authmethods/**/*"
+
+api/authtokens:
+  - changed-files:
+    - any-glob-to-any-file: "api/authtokens/**/*"
+
+api/groups:
+  - changed-files:
+    - any-glob-to-any-file: "api/groups/**/*"
+
+api/hostcatalogs:
+  - changed-files:
+    - any-glob-to-any-file: "api/hostcatalogs/**/*"
+
+api/hosts:
+  - changed-files:
+    - any-glob-to-any-file: "api/hosts/**/*"
+
+api/hostsets:
+  - changed-files:
+    - any-glob-to-any-file: "api/hostsets/**/*"
+
+api/roles:
+  - changed-files:
+    - any-glob-to-any-file: "api/roles/**/*"
+
+api/scopes:
+  - changed-files:
+    - any-glob-to-any-file: "api/scopes/**/*"
+
+api/sessions:
+  - changed-files:
+    - any-glob-to-any-file: "api/sessions/**/*"
+
+api/targets:
+  - changed-files:
+    - any-glob-to-any-file: "api/targets/**/*"
+
+api/users:
+  - changed-files:
+    - any-glob-to-any-file: "api/users/**/*"
+
+core:
+  - changed-files:
+    - any-glob-to-any-file: "internal/**/*"
+
+core/auth:
+  - changed-files:
+    - any-glob-to-any-file: "internal/auth/**/*"
+
+core/authtoken:
+  - changed-files:
+    - any-glob-to-any-file: "internal/authtoken/**/"
+
+core/cmd:
+  - changed-files:
+    - any-glob-to-any-file: "internal/cmd/**/8"
+
+core/daemon:
+  - changed-files:
+    - any-glob-to-any-file: "internal/daemon/**/*"
+
+core/db:
+  - changed-files:
+    - any-glob-to-any-file: "internal/db/**/*"
+
+core/gen:
+  - changed-files:
+    - any-glob-to-any-file: "internal/gen/**/*"
+
+core/host:
+  - changed-files:
+    - any-glob-to-any-file: "internal/host/**/*"
+
+core/iam:
+  - changed-files:
+    - any-glob-to-any-file: "internal/iam/**/*"
+
+core/kms:
+  - changed-files:
+    - any-glob-to-any-file: "internal/kms/**/*"
+
+core/lib:
+  - changed-files:
+    - any-glob-to-any-file: "internal/libs/**/*"
+
+core/oplog:
+  - changed-files:
+    - any-glob-to-any-file: "internal/oplog/**/*"
+
+core/perms:
+  - changed-files:
+    - any-glob-to-any-file: "internal/perms/**/*"
+
+core/proto:
+  - changed-files:
+    - any-glob-to-any-file: "internal/proto/**/*"
+
+core/proxy:
+  - changed-files:
+    - any-glob-to-any-file: "internal/proxy/**/*"
+
+core/server:
+  - changed-files:
+    - any-glob-to-any-file: "internal/server/**/*"
+
+core/session:
+  - changed-files:
+    - any-glob-to-any-file: "internal/session/**/*"
+
+core/sql:
+  - changed-files:
+    - any-glob-to-any-file: "internal/**/*.sql"
+  - changed-files:
+    - any-glob-to-any-file: "internal/**/*query*.go"
+
+core/target:
+  - changed-files:
+    - any-glob-to-any-file: "internal/target/**/*"
+
+core/types:
+  - changed-files:
+    - any-glob-to-any-file: "internal/types/**/*"
+
+core/ui:
+  - changed-files:
+    - any-glob-to-any-file: "internal/ui/**/*"
+
+website:
+  - changed-files:
+    - any-glob-to-any-file: "website/**/*"
+
+docs/concepts:
+  - changed-files:
+    - any-glob-to-any-file: "website/content/docs/concepts/**/*"
+
+docs/getting-started:
+  - changed-files:
+    - any-glob-to-any-file: "website/content/docs/getting-started/**/*"
+
+docs/installing:
+  - changed-files:
+    - any-glob-to-any-file: "website/content/docs/installing/**/*"
+
+docs/configuration:
+  - changed-files:
+    - any-glob-to-any-file: "website/content/docs/configuration/**/*"
+
+docs/releases:
+  - changed-files:
+    - any-glob-to-any-file: "website/content/docs/releases/**/*"
+
+docs/workflows:
+  - changed-files:
+    - any-glob-to-any-file: "website/content/docs/common-workflows/**/*"
+
+docs/roadmap:
+  - changed-files:
+    - any-glob-to-any-file: "website/content/docs/roadmap/**/*"
+
+
+

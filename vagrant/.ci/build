@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+csource="${BASH_SOURCE[0]}"
+while [ -h "$csource" ] ; do csource="$(readlink "$csource")"; done
+root="$( cd -P "$( dirname "$csource" )/../" && pwd )"
+
+. "${root}/.ci/load-ci.sh"
+
+if [ "${#}" -ne 1 ]; then
+      printf "Usage: %s ARTIFACTS_DIR\n" "${0}" >&2
+      exit 1
+fi
+
+dest="${1}"
+mkdir -p "${dest}" ||
+     failure "Could not create destination directory (%s)" "${dest}"
+pushd "${dest}"
+dest="$(pwd)" || failure "Could not read destination directory path"
+popd
+
+# Move to root of project
+pushd "${root}"
+
+info "Building Vagrant RubyGem..."
+wrap gem build ./*.gemspec \
+     "Failed to build Vagrant RubyGem"
+
+# Get the path of the gem
+files=( vagrant*.gem )
+gem="${files[0]}"
+if [ ! -f "${gem}" ]; then
+     debug "could not locate gem in %s" "${files[*]}"
+     failure "Unable to locate built Vagrant RubyGem"
+fi
+
+wrap mv "${gem}" "${dest}" \
+     "Failed to relocate Vagrant RubyGem"
+
+printf "build-artifacts-path=%s\n" "${dest}"

@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+csource="${BASH_SOURCE[0]}"
+while [ -h "$csource" ] ; do csource="$(readlink "$csource")"; done
+root="$( cd -P "$( dirname "$csource" )/../" && pwd )"
+
+. "${root}/.ci/load-ci.sh"
+
+if [ "${#}" -ne 3 ]; then
+  printf "Usage: %s BRANCH COMMIT_ID BUILD_TYPE\n" "${0}" >&2
+  exit 1
+fi
+
+branch="${1}"
+full_sha="${2}"
+build_type="${3}"
+
+if [ -z "${branch}" ]; then
+  failure "Branch variable is unset, required for dev build"
+fi
+if [ -z "${full_sha}" ]; then
+  failure "The full_sha variable is unexpectedly missing, cannot trigger dev build"
+fi
+if [ -z "${build_type}" ]; then
+  failure "The build type is required for triggering dev build"
+fi
+
+# Trim the reference prefix if needed
+if [[ "${branch}" = *"refs/heads"* ]]; then
+  debug "trimming branch reference value - %s" "${branch}"
+  branch="${branch##*refs/heads/}"
+  debug "trimmed branch value - %s" "${branch}"
+fi
+
+info "Triggering development build %s (%s)" "${branch}" "${full_sha}"
+github_repository_dispatch "vagrant-builders" "${build_type}" "commit_id=${full_sha}" "branch=${branch}"

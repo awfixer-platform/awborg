@@ -1,0 +1,83 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: BUSL-1.1
+
+syntax = "proto3";
+
+// define an oplog package within the Boundary controller
+package controller.storage.oplog.store.v1;
+
+import "controller/storage/timestamp/v1/timestamp.proto";
+
+option go_package = "github.com/hashicorp/boundary/internal/oplog/store;store";
+
+// Entry provides a message for oplog entries that's compatible with gorm
+message Entry {
+  // @inject_tag: gorm:"primary_key"
+  uint32 id = 1;
+  // @inject_tag: `gorm:"default:current_timestamp"`
+  timestamp.v1.Timestamp create_time = 2;
+  // @inject_tag: `gorm:"default:current_timestamp"`
+  timestamp.v1.Timestamp update_time = 3;
+
+  // @inject_tag: gorm:"not_null"
+  string version = 4;
+
+  // @inject_tat: gorm:"not_null"
+  string aggregate_name = 5;
+
+  // one to many relationship
+  // @inject_tag: gorm:"foreignkey:entry_id"
+  repeated Metadata metadata = 6;
+
+  // ciphertext entry data stored in the database
+  // @inject_tag: gorm:"column:data;not_null" wrapping:"ct,entry_data"
+  bytes ct_data = 7;
+
+  // plain text version of the decrypted entry data
+  // we are NOT storing this plain-text entry data in the db
+  // @inject_tag: gorm:"-" wrapping:"pt,entry_data"
+  bytes data = 8;
+
+  // the private id of the data key version used to encrypt the data.
+  // @inject_tag: gorm:"not_null"
+  string key_id = 9;
+
+  // the scope id associated with the key used to encrypt the data.
+  // This value is populated from the key_id in a trigger.
+  // @inject_tag: gorm:"default:null"
+  string scope_id = 10;
+}
+
+// Metadata provides a message for oplog metadata that's compatible with gorm
+message Metadata {
+  // @inject_tag: gorm:"primary_key"
+  uint32 id = 1;
+  // @inject_tag: `gorm:"default:current_timestamp"`
+  timestamp.v1.Timestamp create_time = 2;
+  // @inject_tag: gorm:"not_nul
+
+  uint32 entry_id = 3;
+  // @inject_tag: gorm:"foreignkey:EntryId"
+  Entry entry = 4;
+
+  // @inject_tag: gorm:"not_null"
+  string key = 5;
+  // @inject_tag: gorm:"not_null"
+  string value = 6;
+}
+
+// Ticket provides a message for oplog tickets that's compatible with gorm
+message Ticket {
+  // @inject_tag: gorm:"primary_key"
+  uint32 id = 1;
+  // @inject_tag: `gorm:"default:current_timestamp"`
+  timestamp.v1.Timestamp create_time = 2;
+  // @inject_tag: `gorm:"default:current_timestamp"`
+  timestamp.v1.Timestamp update_time = 3;
+
+  // @inject_tat: gorm:"not_null"
+  string name = 6;
+
+  // @inject_tat: gorm:"not_null;default:'1'"
+  uint32 version = 7;
+}

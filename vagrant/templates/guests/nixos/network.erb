@@ -1,0 +1,15 @@
+{ config, pkgs, ... }:
+{
+  networking.interfaces = {
+    <% networks.select {|n| n[:device]}.each do |network| %>
+    <%= network[:device] %>.ipv4.addresses = [{
+      <% if network[:type] == :static %>
+      address = "<%= network[:ip] %>";
+      <% end %>
+      <% if network[:prefix_length] %>
+      prefixLength = <%= network[:prefix_length] %>;
+      <% end %>
+    }];
+    <% end %>
+  };
+}

@@ -1,0 +1,100 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: BUSL-1.1
+
+require 'optparse'
+require "vagrant/util/uploader"
+
+module VagrantPlugins
+  module CloudCommand
+    module ProviderCommand
+      module Command
+        class Upload < Vagrant.plugin("2", :command)
+          include Util
+
+          def execute
+            options = {direct: true}
+
+            opts = OptionParser.new do |o|
+              o.banner = "Usage: vagrant cloud provider upload [options] organization/box-name provider-name version architecture box-file"
+              o.separator ""
+              o.separator "Uploads a box file to Vagrant Cloud for a specific provider"
+              o.separator ""
+              o.separator "Options:"
+              o.separator ""
+              o.on("-D", "--[no-]direct", "Upload asset directly to backend storage") do |d|
+                options[:direct] = d
+              end
+            end
+
+            # Parse the options
+            argv = parse_options(opts)
+            return if !argv
+            if argv.count != 5
+              raise Vagrant::Errors::CLIInvalidUsage,
+                help: opts.help.chomp
+            end
+
+            @client = client_login(@env)
+
+            org, box_name = argv.first.split('/', 2)
+            provider_name = argv[1]
+            version = argv[2]
+            architecture = argv[3]
+            file = File.expand_path(argv[4])
+
+            upload_provider(org, box_name, version, provider_name, architecture, file, @client.token, options)
+          end
+
+          # Upload an asset for a box version provider
+          #
+          # @param [String] org Organization name
+          # @param [String] box Box name
+          # @param [String] version Box version
+          # @param [String] provider Provider name
+          # @param [String] architecture Architecture name
+          # @param [String] file Path to asset
+          # @param [String] access_token User Vagrant Cloud access token
+          # @param [Hash] options
+          # @option options [Boolean] :direct Upload directly to backend storage
+          # @return [Integer]
+          def upload_provider(org, box, version, provider, architecture, file, access_token, options)
+            account = VagrantCloud::Account.new(
+              custom_server: api_server_url,
+              access_token: access_token
+            )
+
+            # Include size check on file and disable direct if over 5G
+            if options[:direct]
+              fsize = File.stat(file).size
+              if fsize > (5 * Vagrant::Util::Numeric::GIGABYTE)
+                box_size = Vagrant::Util::Numeric.bytes_to_string(fsize)
+                @env.ui.warn(I18n.t("cloud_command.provider.direct_disable", size: box_size))
+                options[:direct] = false
+              end
+            end
+
+            with_provider(account: account, org: org, box: box, version: version, provider: provider, architecture: architecture) do |p|
+              p.upload(direct: options[:direct]) do |upload_url|
+                m = options[:direct] ? :put : :put
+                uploader = Vagrant::Util::Uploader.new(upload_url, file, ui: @env.ui, method: m)
+                ui = Vagrant::UI::Prefixed.new(@env.ui, "cloud")
+                ui.output(I18n.t("cloud_command.provider.upload",
+                  org: org, box_name: box, version: version, provider: provider))
+                ui.info("Upload File: #{file}")
+                uploader.upload!
+                ui.success(I18n.t("cloud_command.provider.upload_success",
+                  org: org, box_name: box, version: version, provider: provider))
+              end
+              0
+            end
+          rescue Vagrant::Errors::UploaderError, VagrantCloud::Error => e
+            @env.ui.error(I18n.t("cloud_command.errors.provider.upload_fail",
+              provider: provider, org: org, box_name: box, version: version))
+            @env.ui.error(e.message)
+            1
+          end
+        end
+      end
+    end
+  end
+end

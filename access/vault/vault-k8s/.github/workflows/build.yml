@@ -1,0 +1,133 @@
+name: build
+
+on:
+  push:
+    branches: ["*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build, e.g. 0.1.0"
+        type: string
+        required: false
+
+env:
+  PKG_NAME: "vault-k8s"
+
+jobs:
+  get-product-version:
+    runs-on: ubuntu-latest
+    outputs:
+      product-version: ${{ steps.get-product-version.outputs.product-version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: get product version
+        id: get-product-version
+        run: |
+          VERSION="${{ github.event.inputs.version || '0.0.0-dev' }}"
+          echo "Using version ${VERSION}"
+          echo "product-version=${VERSION}" >> $GITHUB_OUTPUT
+
+  generate-metadata-file:
+    needs: get-product-version
+    runs-on: ubuntu-latest
+    outputs:
+      filepath: ${{ steps.generate-metadata-file.outputs.filepath }}
+    steps:
+      - name: 'Checkout directory'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Generate metadata file
+        id: generate-metadata-file
+        uses: hashicorp/actions-generate-metadata@v1
+        with:
+          version: ${{ needs.get-product-version.outputs.product-version }}
+          product: ${{ env.PKG_NAME }}
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: metadata.json
+          path: ${{ steps.generate-metadata-file.outputs.filepath }}
+
+  build:
+    needs:
+      - get-product-version
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: ["arm", "arm64", "386", "amd64"]
+      fail-fast: true
+
+    name: Go linux ${{ matrix.arch }} build
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup go
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version-file: .go-version
+
+      - name: Build
+        id: build-binary
+        env:
+          GOOS: "linux"
+          GOARCH: ${{ matrix.arch }}
+          VERSION: ${{ needs.get-product-version.outputs.product-version }}
+        shell: bash
+        run: |
+          BUILD_DIR=dist
+          make build BUILD_DIR="${BUILD_DIR}"
+          OUT_DIR='build/out'
+          mkdir -p "${OUT_DIR}"
+          cp -a LICENSE "${BUILD_DIR}/LICENSE.txt"
+          ZIP_FILE="${OUT_DIR}/${{ env.PKG_NAME }}_${{ needs.get-product-version.outputs.product-version }}_linux_${{ matrix.arch }}.zip"
+          zip -r -j "${ZIP_FILE}" "${BUILD_DIR}/"
+          echo "path=${ZIP_FILE}" >> $GITHUB_OUTPUT
+          echo "name=$(basename ${ZIP_FILE})" >> $GITHUB_OUTPUT
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ steps.build-binary.outputs.name }}
+          path: ${{ steps.build-binary.outputs.path }}
+
+  build-docker:
+    name: Docker ${{ matrix.arch }} build
+    needs:
+      - get-product-version
+      - build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: ["arm", "arm64", "386", "amd64"]
+    env:
+      repo: ${{github.event.repository.name}}
+      version: ${{needs.get-product-version.outputs.product-version}}
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Docker Build (Action)
+        uses: hashicorp/actions-docker-build@v2
+        with:
+          version: ${{env.version}}
+          target: default
+          arch: ${{matrix.arch}}
+          tags: |
+            docker.io/hashicorp/${{env.repo}}:${{env.version}}
+            public.ecr.aws/hashicorp/${{env.repo}}:${{env.version}}
+
+  build-docker-ubi-redhat:
+    name: Docker Build UBI Image for RedHat Registry
+    needs:
+      - get-product-version
+      - build
+    runs-on: ubuntu-latest
+    env:
+      repo: ${{github.event.repository.name}}
+      version: ${{needs.get-product-version.outputs.product-version}}
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: hashicorp/actions-docker-build@11d43ef520c65f58683d048ce9b47d6617893c9a # v2
+        with:
+          version: ${{env.version}}
+          target: ubi
+          arch: amd64
+          redhat_tag: quay.io/redhat-isv-containers/5f89bbc30b94cf64cfeb500b:${{env.version}}-ubi

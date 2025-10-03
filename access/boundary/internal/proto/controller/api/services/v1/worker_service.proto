@@ -1,0 +1,255 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+syntax = "proto3";
+
+package controller.api.services.v1;
+
+import "controller/api/resources/workers/v1/worker.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/struct.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "github.com/hashicorp/boundary/internal/gen/controller/api/services;services";
+
+service WorkerService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Worker service"
+    description:
+      "A worker is a service that acts as a network proxy for Boundary sessions. "
+      "It functions as a bridge between users and the target resources they need to access. "
+      "The worker service provides endpoints that let you manage workers in Boundary."
+  };
+
+  // GetWorker returns a stored Worker if present.  The provided request
+  // must include the Worker ID for the Worker being retrieved. If
+  // that ID is missing, malformed or reference a non existing
+  // resource an error is returned.
+  rpc GetWorker(GetWorkerRequest) returns (GetWorkerResponse) {
+    option (google.api.http) = {
+      get: "/v1/workers/{id}"
+      response_body: "item"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "Gets a single Worker."};
+  }
+
+  // ListWorkers returns a list of stored Workers which exist inside the provided
+  // scope. The request must include the scope ID for the Workers being listed.
+  // If the scope ID is missing, malformed, or reference a non existing scope,
+  // an error is returned.
+  rpc ListWorkers(ListWorkersRequest) returns (ListWorkersResponse) {
+    option (google.api.http) = {get: "/v1/workers"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "Lists all Workers."};
+  }
+
+  // CreateWorkerLed creates and stores a Worker in Boundary. The provided
+  // request must include the Scope ID in which the Worker will be created. If
+  // the Scope ID is missing, malformed or references a non existing resource,
+  // an error is returned. If a name is provided that is in use in another
+  // Worker in the same scope, an error is returned.
+  rpc CreateWorkerLed(CreateWorkerLedRequest) returns (CreateWorkerLedResponse) {
+    option (google.api.http) = {
+      post: "/v1/workers:create:worker-led"
+      body: "item"
+      response_body: "item"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "Creates a single Worker."};
+  }
+
+  // CreateControllerLed creates and stores a Worker in Boundary and returns an
+  // activation token that can be used by a worker binary to claim the created
+  // Worker's identity. The provided request must include the Scope ID in which
+  // the Worker will be created. If the Scope ID is missing, malformed or
+  // references a non existing resource, an error is returned. If a name is
+  // provided that is in use in another Worker in the same scope, an error is
+  // returned.
+  rpc CreateControllerLed(CreateControllerLedRequest) returns (CreateControllerLedResponse) {
+    option (google.api.http) = {
+      post: "/v1/workers:create:controller-led"
+      body: "item"
+      response_body: "item"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "Creates a single Worker."};
+  }
+
+  // UpdateWorker updates an existing Worker in boundary.  The provided
+  // Worker must not have any read only fields set.  The update mask must be
+  // included in the request and contain at least 1 mutable field.  To unset
+  // a field's value, include the field in the update mask and don't set it
+  // in the provided Worker. An error is returned if either the Worker id is
+  // missing or reference a non existing resource.  An error is also returned
+  // if the request attempts to update the name to one that is already in use
+  // in this Scope.
+  rpc UpdateWorker(UpdateWorkerRequest) returns (UpdateWorkerResponse) {
+    option (google.api.http) = {
+      patch: "/v1/workers/{id}"
+      body: "item"
+      response_body: "item"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "Updates a Worker."};
+  }
+
+  // DeleteWorker removes a Worker from Boundary. If the provided Worker ID
+  // is malformed or not provided an error is returned.
+  rpc DeleteWorker(DeleteWorkerRequest) returns (DeleteWorkerResponse) {
+    option (google.api.http) = {delete: "/v1/workers/{id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "Deletes a Worker."};
+  }
+
+  // AddWorkerTags adds api tags to an existing Worker. If missing, malformed,
+  // or referencing a non-existing resource, an error is returned.
+  rpc AddWorkerTags(AddWorkerTagsRequest) returns (AddWorkerTagsResponse) {
+    option (google.api.http) = {
+      post: "/v1/workers/{id}:add-worker-tags"
+      body: "*"
+      response_body: "item"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "Adds api tags to an existing Worker."};
+  }
+
+  // SetWorkerTags sets api tags for an existing Worker. Any existing tags are overridden
+  // if they are not included in this request. If missing, malformed, or referencing a
+  // non-existing resource, an error is returned.
+  rpc SetWorkerTags(SetWorkerTagsRequest) returns (SetWorkerTagsResponse) {
+    option (google.api.http) = {
+      post: "/v1/workers/{id}:set-worker-tags"
+      body: "*"
+      response_body: "item"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "Sets api tags for an existing Worker."};
+  }
+
+  // RemoveWorkerTags removes api tags from an existing Worker. If missing, malformed,
+  // or referencing a non-existing resource, an error is returned.
+  rpc RemoveWorkerTags(RemoveWorkerTagsRequest) returns (RemoveWorkerTagsResponse) {
+    option (google.api.http) = {
+      post: "/v1/workers/{id}:remove-worker-tags"
+      body: "*"
+      response_body: "item"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "Removes api tags from an existing Worker."};
+  }
+
+  // ReadCertificateAuthority returns the current and next set of root certificates
+  rpc ReadCertificateAuthority(ReadCertificateAuthorityRequest) returns (ReadCertificateAuthorityResponse) {
+    option (google.api.http) = {
+      get: "/v1/workers:read-certificate-authority"
+      response_body: "item"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "Retrieves root certificates used for worker authentication."};
+  }
+
+  // ReinitializeCas removes both current and next root certs and replaces them with a new set
+  rpc ReinitializeCertificateAuthority(ReinitializeCertificateAuthorityRequest) returns (ReinitializeCertificateAuthorityResponse) {
+    option (google.api.http) = {
+      post: "/v1/workers:reinitialize-certificate-authority"
+      response_body: "item"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "Reinitializes root certificates used for worker authentication."};
+  }
+}
+
+message GetWorkerRequest {
+  string id = 1; // @gotags: `class:"public" eventstream:"observation"`
+}
+
+message GetWorkerResponse {
+  resources.workers.v1.Worker item = 1;
+}
+
+message ListWorkersRequest {
+  string scope_id = 1; // @gotags: `class:"public" eventstream:"observation"`
+  bool recursive = 20 [json_name = "recursive"]; // @gotags: `class:"public" eventstream:"observation"`
+  string filter = 30 [json_name = "filter"]; // @gotags: `class:"sensitive"`
+}
+
+message ListWorkersResponse {
+  repeated resources.workers.v1.Worker items = 1;
+}
+
+message CreateWorkerLedRequest {
+  resources.workers.v1.Worker item = 1;
+}
+
+message CreateWorkerLedResponse {
+  string uri = 1; // @gotags: `class:"public" eventstream:"observation"`
+  resources.workers.v1.Worker item = 2;
+}
+
+message CreateControllerLedRequest {
+  resources.workers.v1.Worker item = 1;
+}
+
+message CreateControllerLedResponse {
+  string uri = 1; // @gotags: `class:"public" eventstream:"observation"`
+  resources.workers.v1.Worker item = 2;
+}
+
+message UpdateWorkerRequest {
+  string id = 1; // @gotags: `class:"public"`
+  resources.workers.v1.Worker item = 2;
+  google.protobuf.FieldMask update_mask = 3 [json_name = "update_mask"];
+}
+
+message UpdateWorkerResponse {
+  resources.workers.v1.Worker item = 1;
+}
+
+message DeleteWorkerRequest {
+  string id = 1; // @gotags: `class:"public"`
+}
+
+message DeleteWorkerResponse {}
+
+message AddWorkerTagsRequest {
+  string id = 1; // @gotags: `class:"public" eventstream:"observation"`
+  // Version is used to ensure this resource has not changed.
+  // The mutation will fail if the version does not match the latest known good version.
+  uint32 version = 2; // @gotags: `class:"public"`
+  map<string, google.protobuf.ListValue> api_tags = 3 [json_name = "api_tags"]; // @gotags: `class:"public"`
+}
+
+message AddWorkerTagsResponse {
+  resources.workers.v1.Worker item = 1;
+}
+
+message SetWorkerTagsRequest {
+  string id = 1; // @gotags: `class:"public" eventstream:"observation"`
+  // Version is used to ensure this resource has not changed.
+  // The mutation will fail if the version does not match the latest known good version.
+  uint32 version = 2; // @gotags: `class:"public"`
+  map<string, google.protobuf.ListValue> api_tags = 3 [json_name = "api_tags"]; // @gotags: `class:"public"`
+}
+
+message SetWorkerTagsResponse {
+  resources.workers.v1.Worker item = 1;
+}
+
+message RemoveWorkerTagsRequest {
+  string id = 1; // @gotags: `class:"public" eventstream:"observation"`
+  // Version is used to ensure this resource has not changed.
+  // The mutation will fail if the version does not match the latest known good version.
+  uint32 version = 2; // @gotags: `class:"public"`
+  map<string, google.protobuf.ListValue> api_tags = 3 [json_name = "api_tags"]; // @gotags: `class:"public"`
+}
+
+message RemoveWorkerTagsResponse {
+  resources.workers.v1.Worker item = 1;
+}
+
+message ReadCertificateAuthorityRequest {
+  string scope_id = 1; // @gotags: `class:"public"`
+}
+
+message ReadCertificateAuthorityResponse {
+  resources.workers.v1.CertificateAuthority item = 1;
+}
+
+message ReinitializeCertificateAuthorityRequest {
+  string scope_id = 1; // @gotags: `class:"public"`
+}
+
+message ReinitializeCertificateAuthorityResponse {
+  resources.workers.v1.CertificateAuthority item = 1;
+}

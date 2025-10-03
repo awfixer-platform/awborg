@@ -1,0 +1,19 @@
+{{template "base/head" .}}
+<div role="main" aria-label="{{.Title}}" class="page-content repository file editor upload">
+	{{template "repo/header" .}}
+	<div class="ui container">
+		{{template "base/alert" .}}
+		<form class="ui comment form form-fetch-action" method="post" action="{{.CommitFormOptions.TargetFormAction}}">
+			{{.CsrfTokenHtml}}
+			{{template "repo/editor/common_top" .}}
+			<div class="repo-editor-header">
+				{{template "repo/editor/common_breadcrumb" .}}
+			</div>
+			<div class="field">
+				{{template "repo/upload" .}}
+			</div>
+			{{template "repo/editor/commit_form" .}}
+		</form>
+	</div>
+</div>
+{{template "base/footer" .}}

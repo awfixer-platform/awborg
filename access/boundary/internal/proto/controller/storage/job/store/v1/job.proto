@@ -1,0 +1,82 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: BUSL-1.1
+
+syntax = "proto3";
+
+// Package store provides protobufs for storing types in the job package.
+package controller.storage.job.store.v1;
+
+import "controller/storage/timestamp/v1/timestamp.proto";
+
+option go_package = "github.com/hashicorp/boundary/internal/scheduler/job/store;store";
+
+message Job {
+  // plugin_id is the primary key of the plugin that registered and owns the job
+  // @inject_tag: `gorm:"primary_key"`
+  string plugin_id = 1;
+
+  // The name of the job.
+  // @inject_tag: `gorm:"primary_key"`
+  string name = 2;
+
+  // The human friendly description of the job.
+  // @inject_tag: `gorm:"not_null"`
+  string description = 3;
+
+  // next_scheduled_run is the time that the next run should be created.
+  // @inject_tag: `gorm:"default:current_timestamp"`
+  timestamp.v1.Timestamp next_scheduled_run = 4;
+}
+
+message JobRun {
+  // server_id referenced an server table which was replaced with both a
+  // server_controller table and a server_worker table.  For the purpose of
+  // jobs, only the controller table is relevant thus we replaced this column
+  // with controller_id.
+  reserved "server_id";
+
+  // private_id is used to access the job run but not intended to be available via the API
+  // @inject_tag: `gorm:"primary_key;default:null"`
+  string private_id = 1;
+
+  // The job_plugin_id is the id of the plugin that owns the job.
+  // @inject_tag: `gorm:"not_null"`
+  string job_plugin_id = 2;
+
+  // The job_name is the name of the job and must be set.
+  // @inject_tag: `gorm:"not_null"`
+  string job_name = 3;
+
+  // The create_time is set by the database.
+  // @inject_tag: `gorm:"default:current_timestamp"`
+  timestamp.v1.Timestamp create_time = 5;
+
+  // The update_time is set by the database.
+  // @inject_tag: `gorm:"default:current_timestamp"`
+  timestamp.v1.Timestamp update_time = 6;
+
+  // The end_time is set when the job run completes.
+  // @inject_tag: `gorm:"default:null"`
+  timestamp.v1.Timestamp end_time = 7;
+
+  // completed_count is set during an update to indicate the current progress.
+  // @inject_tag: `gorm:"default:0"`
+  uint32 completed_count = 8;
+
+  // total_count is set during an update to indicate the progress goal.
+  // @inject_tag: `gorm:"default:0"`
+  uint32 total_count = 9;
+
+  // retries_count is set during an update to indicate the number of times
+  // a job has retried work.
+  // @inject_tag: `gorm:"default:0"`
+  uint32 retries_count = 12;
+
+  // status of the job run (running, failed or interrupted).
+  // @inject_tag: `gorm:"not_null"`
+  string status = 10;
+
+  // The controller_id of the controller running the job and must be set.
+  // @inject_tag: `gorm:"not_null"`
+  string controller_id = 11;
+}

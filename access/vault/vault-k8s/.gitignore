@@ -1,0 +1,25 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+/bin/*
+/.idea/*
+/.build/*
+
+# Output directory for binaries built in CircleCI
+/pkg
+/dist/
+
+# directory for misc build files etc.
+scratch/
+build/
+vault-helm/

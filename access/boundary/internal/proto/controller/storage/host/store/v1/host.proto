@@ -1,0 +1,69 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: BUSL-1.1
+
+syntax = "proto3";
+
+// Package store provides protobufs for storing types in the host package.
+package controller.storage.host.store.v1;
+
+option go_package = "github.com/hashicorp/boundary/internal/host/store;store";
+
+message Catalog {
+  // public_is is a surrogate key suitable for use in a public API.
+  // @inject_tag: `gorm:"primary_key"`
+  string public_id = 1;
+
+  // The project_id of the owning scope and must be set.
+  // @inject_tag: `gorm:"not_null"`
+  string project_id = 2;
+}
+
+message Host {
+  // public_is is a surrogate key suitable for use in a public API.
+  // @inject_tag: `gorm:"primary_key"`
+  string public_id = 1;
+
+  // The catalog_id of the owning catalog and must be set.
+  // @inject_tag: `gorm:"not_null"`
+  string catalog_id = 2;
+}
+
+message Set {
+  // public_is is a surrogate key suitable for use in a public API.
+  // @inject_tag: `gorm:"primary_key"`
+  string public_id = 1;
+
+  // The catalog_id of the owning catalog and must be set.
+  // @inject_tag: `gorm:"not_null"`
+  string catalog_id = 2;
+}
+
+message PreferredEndpoint {
+  // The ID of the host set this belongs to.
+  // @inject_tag: `gorm:"primary_key"`
+  string host_set_id = 1;
+
+  // The priority order, zero-indexed
+  // @inject_tag: `gorm:"primary_key"`
+  uint32 priority = 2;
+
+  // The string text of the preference condition
+  // @inject_tag: `gorm:"not_null"`
+  string condition = 3;
+}
+
+message IpAddress {
+  // @inject_tag: `gorm:"primary_key"`
+  string host_id = 1;
+
+  // @inject_tag: `gorm:"primary_key"`
+  string address = 2;
+}
+
+message DnsName {
+  // @inject_tag: `gorm:"primary_key"`
+  string host_id = 1;
+
+  // @inject_tag: `gorm:"primary_key"`
+  string name = 2;
+}
