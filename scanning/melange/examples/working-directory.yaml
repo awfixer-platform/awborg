@@ -1,0 +1,32 @@
+package:
+  name: hello
+  version: 2.12
+  epoch: 0
+  description: "an example of how conditionals influence build behavior"
+  copyright:
+    - license: Not-Applicable
+
+environment:
+  contents:
+    repositories:
+      - https://packages.wolfi.dev/os
+    keyring:
+      - https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
+    packages:
+      - busybox
+
+pipeline:
+  - working-directory: /home/build/foo
+    runs: |
+      echo "current working directory: $(pwd)"
+
+  - working-directory: /home/build/bar
+    pipeline:
+      - runs: |
+          echo "current working directory: $(pwd)"
+      - working-directory: /home/build/baz
+        runs: |
+          echo "current working directory: $(pwd)"
+
+  - runs: |
+      mkdir -p "${{targets.destdir}}"

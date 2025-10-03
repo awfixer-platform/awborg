@@ -1,0 +1,12 @@
+# python/clean/tensorflow_model_analysis/tfjs_predict_extractor_util.py: medium
+c2/tool_transfer/os: medium
+c2/tool_transfer/python: medium
+discover/system/platform: medium
+exec/imports/python: low
+exec/program: medium
+fs/permission/modify: medium
+fs/tempdir/create: low
+net/http: low
+net/url/embedded: low
+net/url/parse: low
+net/url/request: medium

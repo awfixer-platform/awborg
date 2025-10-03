@@ -1,0 +1,16 @@
+{
+    "builders": [{
+        "type": "test"
+    }],
+
+    "provisioners": [
+        {
+            "type": "test-integer",
+            "max_retries": 1
+        },
+        {
+            "type": "test-string",
+            "max_retries": "1"
+        }
+    ]
+}

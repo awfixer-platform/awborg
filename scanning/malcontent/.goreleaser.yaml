@@ -1,0 +1,28 @@
+project_name: malcontent
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: malcontent-build
+    binary: malcontent
+    main: ./
+    goos:
+      - darwin
+      - linux
+      - windows
+    flags:
+      - -trimpath
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    ldflags:
+      - -s -w -X main.BuildVersion={{.Version}}
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"

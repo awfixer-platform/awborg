@@ -1,0 +1,21 @@
+name: Clean a ruby gem
+
+needs:
+  packages:
+    - busybox
+    - ca-certificates-bundle
+
+pipeline:
+  - runs: |
+      if ! [ -x "$(command -v ruby)" ]; then
+        echo 'Error: Ruby is not installed.'
+        exit 1
+      fi
+  - runs: |
+      INSTALL_DIR=${{targets.contextdir}}/$(ruby -e 'puts Gem.default_dir')
+      rm -rf ${INSTALL_DIR}/build_info \
+             ${INSTALL_DIR}/cache
+      if [ -d "${INSTALL_DIR}" ]; then
+        find "${INSTALL_DIR}" -name 'gem_make.out' -exec rm {} \;
+        find "${INSTALL_DIR}" -name 'mkmf.log' -exec rm {} \;
+      fi

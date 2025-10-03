@@ -1,0 +1,171 @@
+version: "2"
+linters:
+  default: none
+  enable:
+    - asciicheck
+    - bodyclose
+    - copyloopvar
+    - cyclop
+    - dogsled
+    - dupl
+    - durationcheck
+    - errcheck
+    - errname
+    - errorlint
+    - exhaustive
+    - forcetypeassert
+    - gocognit
+    - goconst
+    - gocritic
+    - godot
+    - goheader
+    - goprintffuncname
+    - gosec
+    - govet
+    - importas
+    - ineffassign
+    - makezero
+    - misspell
+    - nakedret
+    - nestif
+    - nilerr
+    - noctx
+    - nolintlint
+    - prealloc
+    - predeclared
+    - revive
+    - staticcheck
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+  settings:
+    cyclop:
+      # NOTE: This is a very high transitional threshold
+      max-complexity: 37
+      package-average: 34
+    dupl:
+      threshold: 200
+    errorlint:
+      # Forcing %w in error wrapping forces authors to make errors part of their package APIs. The decision to make
+      # an error part of a package API should be a concious decision by the author.
+      # Also see Hyrums Law.
+      errorf: false
+      # these are still common in Go: for instance, exit errors.
+      asserts: false
+    exhaustive:
+      default-signifies-exhaustive: true
+    gocognit:
+      # NOTE: This is a very high transitional threshold
+      min-complexity: 98
+    goconst:
+      min-len: 4
+      min-occurrences: 5
+    gosec:
+      excludes:
+        - G107 # Potential HTTP request made with variable url
+        - G204 # Subprocess launched with function call as argument or cmd arguments
+        - G404 # Use of weak random number generator (math/rand instead of crypto/rand
+    nestif:
+      min-complexity: 8
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+      allow-unused: false
+    revive:
+      severity: warning
+      rules:
+        - name: atomic
+        - name: blank-imports
+        - name: bool-literal-in-expr
+        - name: confusing-naming
+        - name: constant-logical-expr
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: deep-exit
+        - name: defer
+        - name: range-val-in-closure
+        - name: range-val-address
+        - name: dot-imports
+        - name: error-naming
+        - name: error-return
+        - name: error-strings
+        - name: errorf
+        - name: exported
+        - name: identical-branches
+        - name: if-return
+        - name: import-shadowing
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: indent-error-flow
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: redefines-builtin-id
+        - name: superfluous-else
+        - name: struct-tag
+        - name: time-naming
+        - name: unexported-naming
+        - name: unexported-return
+        - name: unnecessary-stmt
+        - name: unreachable-code
+        - name: unused-parameter
+        - name: var-declaration
+        - name: var-naming
+        - name: unconditional-recursion
+        - name: waitgroup-by-value
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - dupl
+          - errcheck
+          - forcetypeassert
+          - gocyclo
+          - gosec
+          - noctx
+        path: _test\.go
+      - linters:
+          - noctx
+        path: .*cmd.*
+      - linters:
+          - noctx
+        path: main\.go
+      - path: .*cmd.*
+        text: deep-exit
+      - path: main\.go
+        text: deep-exit
+      - linters:
+          # This check is of questionable value
+          - tparallel
+        text: call t.Parallel on the top level as well as its subtests
+      - linters:
+          - cyclop
+          - goconst
+        path: (.+)_test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  # Don't hide lint issues just because there are many of them
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

@@ -1,0 +1,12 @@
+{
+    "variables": {
+        "foo": "bar_extra_sensitive_probably_a_password"
+    },
+    "sensitive-variables": [
+    	"foo"
+    ],
+    "builders": [{
+        "type": "test",
+        "value": "{{build_name}}"
+    }]
+}

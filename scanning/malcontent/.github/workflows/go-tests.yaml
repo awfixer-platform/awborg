@@ -1,0 +1,86 @@
+# Copyright 2024 Chainguard, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+name: Go Tests
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    if: ${{ github.repository }} == 'chainguard-dev/malcontent'
+    runs-on: mal-ubuntu-latest-8-core
+    container:
+      image: cgr.dev/chainguard/wolfi-base:latest
+      options: >-
+        --cap-add DAC_OVERRIDE
+        --cap-add SETGID
+        --cap-add SETUID
+        --cap-drop ALL
+        --cgroupns private
+        --cpu-shares=8192
+        --memory-swappiness=0
+        --security-opt no-new-privileges
+        --ulimit core=0
+        --ulimit nofile=4096:4096
+        --ulimit nproc=4096:4096
+    steps:
+      - name: Install dependencies
+        run: |
+          apk update
+          apk add curl findutils git go nodejs upx xz yara-x
+
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Trust repository
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Unit tests
+        run: |
+          make test
+
+  integration:
+    if: ${{ github.repository }} == 'chainguard-dev/malcontent'
+    runs-on: mal-ubuntu-latest-8-core
+    container:
+      image: cgr.dev/chainguard/wolfi-base:latest
+      options: >-
+        --cap-add DAC_OVERRIDE
+        --cap-add SETGID
+        --cap-add SETUID
+        --cap-drop ALL
+        --cgroupns private
+        --cpu-shares=8192
+        --memory-swappiness=0
+        --security-opt no-new-privileges
+        --ulimit core=0
+        --ulimit nofile=4096:4096
+        --ulimit nproc=4096:4096
+    steps:
+      - name: Install dependencies
+        run: |
+          apk update
+          apk add curl findutils git go nodejs upx xz yara-x
+
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Trust repository
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Integration tests
+        run: |
+          make integration

@@ -1,0 +1,148 @@
+{
+    "Files": {
+        "macOS/clean/ls": {
+            "Path": "macOS/clean/ls",
+            "SHA256": "461b7ef5288c9c4b0d10aefc9ca42f7ddab9954a3f3d032e3a783e3da0c970b6",
+            "Size": 154352,
+            "Syscalls": [
+                "getdents",
+                "openat",
+                "readlink"
+            ],
+            "Pledge": [
+                "inet",
+                "rpath"
+            ],
+            "Behaviors": [
+                {
+                    "Description": "binary contains hardcoded URL",
+                    "MatchStrings": [
+                        "http://www.apple.com/appleca/root.crl0",
+                        "http://www.apple.com/DTDs/PropertyList",
+                        "http://crl.apple.com/codesigning.crl0",
+                        "https://www.apple.com/appleca/0"
+                    ],
+                    "RiskScore": 1,
+                    "RiskLevel": "LOW",
+                    "RuleURL": "https://github.com/chainguard-dev/malcontent/blob/main/rules/c2/addr/url.yara#binary_with_url",
+                    "ID": "c2/addr/url",
+                    "RuleName": "binary_with_url"
+                },
+                {
+                    "Description": "Look up or override terminal settings",
+                    "MatchStrings": [
+                        "TERM"
+                    ],
+                    "RiskScore": 1,
+                    "RiskLevel": "LOW",
+                    "RuleURL": "https://github.com/chainguard-dev/malcontent/blob/main/rules/exec/shell/TERM.yara#TERM",
+                    "ReferenceURL": "https://www.gnu.org/software/gettext/manual/html_node/The-TERM-variable.html",
+                    "ID": "exec/shell/TERM",
+                    "RuleName": "TERM"
+                },
+                {
+                    "Description": "traverse filesystem hierarchy",
+                    "MatchStrings": [
+                        "_fts_children",
+                        "_fts_close",
+                        "_fts_read",
+                        "_fts_open",
+                        "_fts_set"
+                    ],
+                    "RiskScore": 1,
+                    "RiskLevel": "LOW",
+                    "RuleURL": "https://github.com/chainguard-dev/malcontent/blob/main/rules/fs/directory/directory-traverse.yara#fts",
+                    "ID": "fs/directory/traverse",
+                    "RuleName": "fts"
+                },
+                {
+                    "Description": "read value of a symbolic link",
+                    "MatchStrings": [
+                        "readlink"
+                    ],
+                    "RiskScore": 1,
+                    "RiskLevel": "LOW",
+                    "RuleURL": "https://github.com/chainguard-dev/malcontent/blob/main/rules/fs/link-read.yara#readlink",
+                    "ReferenceURL": "https://man7.org/linux/man-pages/man2/readlink.2.html",
+                    "ID": "fs/link_read",
+                    "RuleName": "readlink"
+                },
+                {
+                    "Description": "Uses the HTTP protocol",
+                    "MatchStrings": [
+                        "http"
+                    ],
+                    "RiskScore": 1,
+                    "RiskLevel": "LOW",
+                    "RuleURL": "https://github.com/chainguard-dev/malcontent/blob/main/rules/net/http/http.yara#http",
+                    "ID": "net/http",
+                    "RuleName": "http"
+                },
+                {
+                    "Description": "Retrieve environment variables",
+                    "MatchStrings": [
+                        "getenv"
+                    ],
+                    "RiskScore": 1,
+                    "RiskLevel": "LOW",
+                    "RuleURL": "https://github.com/chainguard-dev/malcontent/blob/main/rules/os/env/get.yara#getenv",
+                    "ID": "os/env/get",
+                    "RuleName": "getenv"
+                }
+            ],
+            "RiskScore": 1,
+            "RiskLevel": "LOW"
+        }
+    },
+    "Stats": {
+        "PkgStats": [
+            {
+                "Count": 1,
+                "Key": "c2/addr/url",
+                "Total": 6,
+                "Value": 16.666666666666664
+            },
+            {
+                "Count": 1,
+                "Key": "exec/shell/TERM",
+                "Total": 6,
+                "Value": 16.666666666666664
+            },
+            {
+                "Count": 1,
+                "Key": "fs/directory/traverse",
+                "Total": 6,
+                "Value": 16.666666666666664
+            },
+            {
+                "Count": 1,
+                "Key": "fs/link_read",
+                "Total": 6,
+                "Value": 16.666666666666664
+            },
+            {
+                "Count": 1,
+                "Key": "net/http",
+                "Total": 6,
+                "Value": 16.666666666666664
+            },
+            {
+                "Count": 1,
+                "Key": "os/env/get",
+                "Total": 6,
+                "Value": 16.666666666666664
+            }
+        ],
+        "ProcessedFiles": 1,
+        "RiskStats": [
+            {
+                "Count": 1,
+                "Key": 1,
+                "Total": 1,
+                "Value": 100
+            }
+        ],
+        "TotalBehaviors": 6,
+        "TotalRisks": 1
+    }
+}

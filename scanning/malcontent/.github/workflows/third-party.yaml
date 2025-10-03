@@ -1,0 +1,69 @@
+name: Update third-party rules
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */12 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    if: ${{ github.repository }} == 'chainguard-dev/malcontent'
+    runs-on: mal-ubuntu-latest-8-core
+    container:
+      image: cgr.dev/chainguard/wolfi-base:latest
+      options: >-
+        --cap-add DAC_OVERRIDE
+        --cap-add SETGID
+        --cap-add SETUID
+        --cap-drop ALL
+        --cgroupns private
+        --cpu-shares=8192
+        --memory-swappiness=0
+        --security-opt no-new-privileges
+        --ulimit core=0
+        --ulimit nofile=4096:4096
+        --ulimit nproc=4096:4096
+    permissions:
+      contents: write
+      id-token: write
+      pull-requests: write
+    steps:
+      - name: Install dependencies
+        run: |
+          apk update
+          apk add bash curl findutils gh git go nodejs perl upx xz yara-x
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Trust repository
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+      - uses: chainguard-dev/actions/setup-gitsign@de56c2728beb0a0f371bff2ce2ee4b8afee4b5e8
+      - name: Set up Octo-STS
+        uses: octo-sts/action@e480437973a6f6ac2e9caa40ecabedc870d76395 # v1.0.1
+        id: octo-sts
+        with:
+          scope: chainguard-dev/malcontent
+          identity: third-party
+
+      - name: Run make update-third-party
+        run: |
+          make update-third-party
+      - name: Run make refresh-test-data
+        run: |
+          make refresh-sample-testdata
+      - name: Commit changes and create PR
+        env:
+          GH_TOKEN: ${{ steps.octo-sts.outputs.token }}
+        run: |
+          if [[ -n $(git status -s) ]]; then
+            DATE=$(date +%F)
+            BRANCH="third-party-rule-update-${DATE}"
+            git checkout -b "${BRANCH}"
+            git add .
+            git commit -m "Update third-party rules as of ${DATE}"
+            git push origin "${BRANCH}"
+
+            gh pr create -t "Update third-party rules as of ${DATE}" -b "${DATE} third-party rule update for malcontent." -B main -H "${BRANCH}"
+          fi
+        shell: bash

@@ -1,0 +1,11 @@
+# linux/2024.k4spreader/d.py: critical
+c2/addr/ip: high
+c2/tool_transfer/dropper: high
+c2/tool_transfer/http_ip_temp: critical
+evasion/net/http_443: high
+fs/path/dev: medium
+fs/path/var: low
+net/download: medium
+net/http: low
+net/url/embedded: low
+persist/writeable_dir: high

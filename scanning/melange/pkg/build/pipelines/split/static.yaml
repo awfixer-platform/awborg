@@ -1,0 +1,37 @@
+name: Split static library files
+
+needs:
+  packages:
+    - busybox
+
+inputs:
+  package:
+    description: |
+      The package to split static library files from
+    required: false
+
+pipeline:
+  - runs: |
+      PACKAGE_DIR="${{targets.destdir}}"
+      if [ -n "${{inputs.package}}" ]; then
+        PACKAGE_DIR="${{targets.outdir}}/${{inputs.package}}"
+      fi
+
+      if [ "$PACKAGE_DIR" == "${{targets.contextdir}}" ]; then
+        echo "ERROR: Package can not split files from itself!" && exit 1
+      fi
+
+      i= j=
+      cd "$PACKAGE_DIR" || exit 0
+
+      libdirs=usr/
+      [ -d lib/ ] && libdirs="lib/ $libdirs"
+      for i in \
+        $(find $libdirs -name '*.a' 2>/dev/null); do
+            if [ -e "$PACKAGE_DIR/$i" ] || [ -L "$PACKAGE_DIR/$i" ]; then
+              d="${{targets.contextdir}}/${i%/*}" # dirname $i
+              mkdir -p "$d"
+              mv "$PACKAGE_DIR/$i" "$d"
+              rmdir "$PACKAGE_DIR/${i%/*}" 2>/dev/null || :
+            fi
+        done
