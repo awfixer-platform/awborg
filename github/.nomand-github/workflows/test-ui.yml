@@ -1,0 +1,155 @@
+name: test-ui
+on:
+  pull_request:
+    paths:
+      - "ui/**"
+  push:
+    branches:
+      - main
+      - release/**
+      - test-ui
+    paths:
+      - "ui/**"
+
+jobs:
+  pre-test:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ui
+    outputs:
+      nonce: ${{ steps.nonce.outputs.nonce }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ./.github/actions/setup-js
+      - name: lint:js
+        run: yarn run lint:js
+      - name: lint:hbs
+        run: yarn run lint:hbs
+      - id: nonce
+        name: nonce
+        run: echo "nonce=${{ github.run_id }}-$(date +%s)" >> "$GITHUB_OUTPUT"
+
+  tests:
+    needs:
+      - pre-test
+    runs-on: ${{ endsWith(github.repository, '-enterprise') && fromJSON('["self-hosted", "ondemand", "linux", "type=m7a.2xlarge;m6a.2xlarge"]') || 'ubuntu-22.04' }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ui
+    strategy:
+      fail-fast: false
+      matrix:
+        partition: [1, 2, 3, 4]
+        split: [4]
+        # Note: If we ever change the number of partitions, we'll need to update the
+        # finalize.combine step to match
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ./.github/actions/setup-js
+      - uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1.7.3
+      - name: Retrieve Vault-hosted Secrets
+        if: endsWith(github.repository, '-enterprise')
+        id: vault
+        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0 # v3.1.0
+        with:
+          url: ${{ vars.CI_VAULT_URL }}
+          method: ${{ vars.CI_VAULT_METHOD }}
+          path: ${{ vars.CI_VAULT_PATH }}
+          jwtGithubAudience: ${{ vars.CI_VAULT_AUD }}
+          secrets: |-
+            kv/data/teams/nomad/ui PERCY_TOKEN ;
+      - name: ember exam
+        id: ember_exam
+        env:
+          PERCY_TOKEN: ${{ env.PERCY_TOKEN || secrets.PERCY_TOKEN }}
+          PERCY_PARALLEL_NONCE: ${{ needs.pre-test.outputs.nonce }}
+        run: |
+          yarn exam:parallel --split=${{ matrix.split }} --partition=${{ matrix.partition }} --json-report=test-results/test-results.json
+        continue-on-error: true
+      - name: Express failure
+        if: steps.ember_exam.outcome == 'failure'
+        run: |
+          echo "Tests failed in ember-exam for partition ${{ matrix.partition }}"
+          echo "Failed tests:"
+          node -e "
+            const results = JSON.parse(require('fs').readFileSync('test-results/test-results.json'));
+            results.tests.filter(t => !t.passed).forEach(test => {
+              console.error('\n❌ ' + test.name);
+              if (test.error) console.error(test.error);
+            });
+          "
+          exit 1
+      - name: Upload partition test results
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: test-results-${{ matrix.partition }}
+          path: ui/test-results/test-results.json
+          retention-days: 90
+  finalize:
+    needs:
+      - pre-test
+      - tests
+    runs-on: ${{ endsWith(github.repository, '-enterprise') && fromJSON('["self-hosted", "ondemand", "linux", "type=m7a.2xlarge;m6a.2xlarge"]') || 'ubuntu-22.04' }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ./.github/actions/setup-js
+      - name: Retrieve Vault-hosted Secrets
+        if: endsWith(github.repository, '-enterprise')
+        id: vault
+        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0 # v3.1.0
+        with:
+          url: ${{ vars.CI_VAULT_URL }}
+          method: ${{ vars.CI_VAULT_METHOD }}
+          path: ${{ vars.CI_VAULT_PATH }}
+          jwtGithubAudience: ${{ vars.CI_VAULT_AUD }}
+          secrets: |-
+            kv/data/teams/nomad/ui PERCY_TOKEN ;
+      - name: Download all test results
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          pattern: test-results-*
+          path: test-results
+
+      - name: Combine test results for comparison
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: node ../scripts/combine-ui-test-results.js
+      - name: Upload combined results for comparison
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: test-results-${{ github.sha }}
+          path: ui/combined-test-results.json
+          retention-days: 90
+
+      - name: finalize
+        env:
+          PERCY_TOKEN: ${{ env.PERCY_TOKEN || secrets.PERCY_TOKEN }}
+          PERCY_PARALLEL_NONCE: ${{ needs.pre-test.outputs.nonce }}
+        run: yarn percy build:finalize
+
+  handle-failure:
+    needs:
+      - pre-test
+      - tests
+      - finalize
+    if: always() && github.event_name == 'push' && contains(needs.*.result, 'failure')
+    uses: ./.github/workflows/test-failure-notification.yml
+    secrets: inherit
+    with:
+      actor: ${{ github.triggering_actor }}
+      git-branch: ${{ github.ref_name }}
+      workflow-run-id: ${{ github.run_id }}
+      workflow-name: ${{ github.workflow }}
+
+permissions:
+  contents: read
+  id-token: write

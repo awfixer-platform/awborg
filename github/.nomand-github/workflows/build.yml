@@ -1,0 +1,460 @@
+# The build workflow is responsible for building Nomad on all our supported
+# platforms. The compiled artifacts are then uploaded to GitHub. This upload
+# triggers the CRT prepare workflow, which downloads the artifacts and then
+# uploads them to our internal store.
+#
+# The workflow can be triggered in two ways:
+#  - pushes to main or long-lived release line branches (eg. 1.10.x)
+#  - dispatched via the release workflow (release.yml).
+#
+# The workflow should not be triggered from short-lived release branches;
+# branches that are cut from the long-lived ones in order to release Nomad. The
+# release workflow should be the only process responsible for triggering the
+# build workflow. This is because the release workflow performs a commit and
+# push of updated generated assets to the release branch. If this push triggers
+# a build, it will conflict with the release build process which shares the same
+# Git SHA and result in a last-write-wins to our internal store.
+name: build
+
+on:
+  push:
+    branches:
+      # 'main' is our forever branch where all changes get merged.
+      # 'release/[0-9].[0-9]+.x*' matches our long-lived release lines such as
+      # '1.10.x' and '1.10.x+ent' but excludes short-lived release branches such
+      # as '1.10.0' and '1.10.0+ent'.
+      - main
+      - 'release/[0-9].[0-9]+.x*'
+  workflow_dispatch:
+    inputs:
+      build-ref:
+        description: 'The git ref to build from'
+        type: string
+        default: ''
+        required: false
+      make-prerelease:
+        description: "Run prerelease to generate files"
+        type: "boolean"
+        required: false
+        default: true
+
+env:
+  PKG_NAME: "nomad"
+  GO_TAGS: "release"
+
+jobs:
+  get-go-version:
+    runs-on: ubuntu-22.04
+    outputs:
+      go-version: ${{ steps.get-go-version.outputs.go-version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.inputs.build-ref }}
+      - name: Determine Go version
+        id: get-go-version
+        # We use .go-version as our source of truth for current Go
+        # version, because "goenv" can react to it automatically.
+        run: |-
+          echo "Building with Go $(cat .go-version)"
+          echo "go-version=$(cat .go-version)" >> "$GITHUB_OUTPUT"
+  get-product-version:
+    runs-on: ubuntu-22.04
+    outputs:
+      product-version: ${{ steps.get-product-version.outputs.product-version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.inputs.build-ref }}
+      - name: get product version
+        id: get-product-version
+        run: |-
+          make version
+          echo "product-version=$(make version)" >> "$GITHUB_OUTPUT"
+  generate-metadata-file:
+    needs: get-product-version
+    runs-on: ubuntu-22.04
+    outputs:
+      filepath: ${{ steps.generate-metadata-file.outputs.filepath }}
+    steps:
+      - name: "Checkout directory"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.inputs.build-ref }}
+      - name: Generate metadata file
+        id: generate-metadata-file
+        uses: hashicorp/actions-generate-metadata@fdbc8803a0e53bcbb912ddeee3808329033d6357 # v1.1.1
+        with:
+          version: ${{ needs.get-product-version.outputs.product-version }}
+          product: ${{ env.PKG_NAME }}
+          repositoryOwner: "hashicorp"
+          sha: ${{ github.event.inputs.build-ref }}
+      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: metadata.json
+          path: ${{ steps.generate-metadata-file.outputs.filepath }}
+
+  build-other:
+    needs: [get-go-version, get-product-version]
+    runs-on: custom-linux-xl-nomad-22.04
+    strategy:
+      matrix:
+        goos: [windows]
+        goarch: ["amd64"]
+      fail-fast: true
+
+    name: Go ${{ needs.get-go-version.outputs.go-version }} ${{ matrix.goos }} ${{ matrix.goarch }} build
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.inputs.build-ref }}
+      - name: Setup go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: ${{ needs.get-go-version.outputs.go-version }}
+
+      - name: Build dependencies
+        run: make deps
+
+      - name: Setup node and yarn
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: "20"
+          cache-dependency-path: "ui/yarn.lock"
+
+      - name: Install Yarn
+        run: |
+          npm install -g yarn
+
+      - name: Build prerelease
+        run: make prerelease
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.make-prerelease == 'true' }}
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GO_TAGS: ${{ env.GO_TAGS }}
+          CGO_ENABLED: 1
+        run: |
+          go clean -cache
+          make pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip
+          mv pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip ${{ env.PKG_NAME }}_${{ needs.get-product-version.outputs.product-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: ${{ env.PKG_NAME }}_${{ needs.get-product-version.outputs.product-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+          path: ${{ env.PKG_NAME }}_${{ needs.get-product-version.outputs.product-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+
+  build-linux:
+    needs: [get-go-version, get-product-version]
+    runs-on: custom-linux-xl-nomad-22.04
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    strategy:
+      matrix:
+        goos: [linux]
+        goarch: ["arm64", "amd64"]
+      fail-fast: true
+
+    name: Go ${{ needs.get-go-version.outputs.go-version }} ${{ matrix.goos }} ${{ matrix.goarch }} build
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.inputs.build-ref }}
+
+      # even though we build inside the container, go tooling is still needed
+      # for make prerelease
+      - name: Setup go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: ${{ needs.get-go-version.outputs.go-version }}
+
+      - name: Build dependencies
+        run: make deps
+
+      - name: Setup node and yarn
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: "20"
+          cache-dependency-path: "ui/yarn.lock"
+
+      - name: Install Yarn
+        run: |
+          npm install -g yarn
+
+      - name: Build prerelease
+        run: make prerelease
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.make-prerelease == 'true' }}
+
+      - name: Build nomad-builder image
+        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4 # v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
+        with:
+          platforms: linux/amd64 # we only ever build amd64 images because we always run on amd64 runners and cross-compile inside the container if needed
+          context: .github/nomad-builder/
+          build-args: |
+            GO_VERSION=${{ needs.get-go-version.outputs.go-version }}
+          push: true
+          tags: localhost:5000/nomad-builder:${{ github.sha }}
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GO_TAGS: ${{ env.GO_TAGS }}
+          CGO_ENABLED: 1
+        run: |
+          go clean -cache
+          docker run --env GO_TAGS="${{env.GO_TAGS}}" -v "$(pwd)":/build localhost:5000/nomad-builder:${{ github.sha }} make pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip
+          cp pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip ${{ env.PKG_NAME }}_${{ needs.get-product-version.outputs.product-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: ${{ env.PKG_NAME }}_${{ needs.get-product-version.outputs.product-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+          path: ${{ env.PKG_NAME }}_${{ needs.get-product-version.outputs.product-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+
+      - name: Copy license file
+        env:
+          LICENSE_DIR: ".release/linux/package/usr/share/doc/${{ env.PKG_NAME }}"
+        run: |
+          mkdir -p "$LICENSE_DIR"
+          cp LICENSE "$LICENSE_DIR/LICENSE.txt"
+
+      - name: Package
+        uses: hashicorp/actions-packaging-linux@8d55a640bb30b5508f16757ea908b274564792d4 # v1.8.0
+        with:
+          name: ${{ env.PKG_NAME }}
+          description: "Nomad is an easy-to-use, flexible, and performant workload orchestrator that can deploy a mix of microservice, batch, containerized, and non-containerized applications."
+          arch: ${{ matrix.goarch }}
+          version: ${{ needs.get-product-version.outputs.product-version }}
+          maintainer: "HashiCorp"
+          homepage: "https://github.com/hashicorp/nomad"
+          license: "BUSL-1.1"
+          binary: "pkg/${{ matrix.goos }}_${{ matrix.goarch }}/${{ env.PKG_NAME }}"
+          deb_depends: "openssl"
+          rpm_depends: "openssl"
+          deb_recommends: "dmidecode"
+          rpm_recommends: "dmidecode"
+          config_dir: ".release/linux/package/"
+          preinstall: ".release/linux/preinst"
+          postinstall: ".release/linux/postinst"
+          postremove: ".release/linux/postrm"
+
+      - name: Set Package Names
+        run: |
+          echo "RPM_PACKAGE=$(basename out/*.rpm)" >> "$GITHUB_ENV"
+          echo "DEB_PACKAGE=$(basename out/*.deb)" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: ${{ env.RPM_PACKAGE }}
+          path: out/${{ env.RPM_PACKAGE }}
+
+      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: ${{ env.DEB_PACKAGE }}
+          path: out/${{ env.DEB_PACKAGE }}
+
+  build-darwin:
+    needs: [get-go-version, get-product-version]
+    runs-on: ${{ endsWith(github.repository, '-enterprise') && fromJSON('["self-hosted", "ondemand", "macos"]') || 'macos-latest' }}
+    strategy:
+      matrix:
+        goos: [darwin]
+        goarch: ["arm64", "amd64"]
+      fail-fast: true
+
+    name: Go ${{ needs.get-go-version.outputs.go-version }} ${{ matrix.goos }} ${{ matrix.goarch }} build
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.inputs.build-ref }}
+
+      - name: Retrieve Vault-hosted Secrets
+        if: endsWith(github.repository, '-enterprise')
+        id: vault
+        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0 # v3.1.0
+        with:
+          url: ${{ vars.CI_VAULT_URL }}
+          method: ${{ vars.CI_VAULT_METHOD }}
+          path: ${{ vars.CI_VAULT_PATH }}
+          jwtGithubAudience: ${{ vars.CI_VAULT_AUD }}
+          secrets: |-
+            kv/data/github/hashicorp/nomad-enterprise/gha ELEVATED_GITHUB_TOKEN ;
+      - name: Git config token
+        if: endsWith(github.repository, '-enterprise')
+        run: git config --global url.'https://${{ env.ELEVATED_GITHUB_TOKEN }}@github.com'.insteadOf 'https://github.com'
+
+      - name: Setup go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: ${{ needs.get-go-version.outputs.go-version }}
+
+      - name: Build dependencies
+        run: make deps
+
+      - name: Setup node and yarn
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: "20"
+          cache-dependency-path: "ui/yarn.lock"
+
+      - name: Install Yarn
+        run: |
+          npm install -g yarn
+
+      - name: Build prerelease
+        run: make prerelease
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.make-prerelease == 'true' }}
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GO_TAGS: "${{ env.GO_TAGS }} netcgo"
+          CGO_ENABLED: 1
+        run: |
+          go clean -cache
+          make pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip
+          mv pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip ${{ env.PKG_NAME }}_${{ needs.get-product-version.outputs.product-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: ${{ env.PKG_NAME }}_${{ needs.get-product-version.outputs.product-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+          path: ${{ env.PKG_NAME }}_${{ needs.get-product-version.outputs.product-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+
+  build-docker:
+    name: Docker ${{ matrix.arch }} build
+    needs:
+      - get-product-version
+      - build-linux
+    runs-on: custom-linux-xl-nomad-22.04
+    strategy:
+      matrix:
+        arch: ["arm64", "amd64"]
+    env:
+      version: ${{needs.get-product-version.outputs.product-version}}
+      revision: ${{github.sha}}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set revision
+        if: "${{ github.event.inputs.build-ref != '' }}"
+        run: |
+          echo "revision=${{ github.event.inputs.build-ref }}" >> "$GITHUB_ENV"
+      - name: Docker Build (Action)
+        uses: hashicorp/actions-docker-build@11d43ef520c65f58683d048ce9b47d6617893c9a # v2.0.0
+        with:
+          smoke_test: |
+            TEST_VERSION="$(docker run "${IMAGE_NAME}" version | awk '/Nomad v/{print $2}')"
+            if [ "${TEST_VERSION}" != "v${version}" ]; then
+              echo "Test FAILED"
+              exit 1
+            fi
+            echo "Test PASSED"
+          version: ${{env.version}}
+          revision: ${{env.revision}}
+          target: release
+          arch: ${{matrix.arch}}
+          tags: |
+            docker.io/hashicorp/${{env.PKG_NAME}}:${{env.version}}
+          dev_tags: |
+            docker.io/hashicorppreview/${{ env.PKG_NAME }}:${{ env.version }}-dev
+            docker.io/hashicorppreview/${{ env.PKG_NAME }}:${{ env.version }}-${{env.revision}}
+
+  minimum-os-amd64:
+    # test glibc 2.28 compatibility (RHEL 8.10)
+    name: OS Compatibility (AMD64)
+    needs:
+      - get-go-version
+      - get-product-version
+      - build-linux
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux]
+        goarch: [amd64]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: ${{needs.get-go-version.outputs.go-version}}
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: ${{ env.PKG_NAME }}_${{ needs.get-product-version.outputs.product-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+      - name: Test binary
+        env:
+          artifact_name: ${{ env.PKG_NAME }}_${{ needs.get-product-version.outputs.product-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+        run: |
+          echo "::group::Unpack and Prep"
+          unzip "$artifact_name"
+          echo "::group::Diagnostics"
+          echo "CGO related build information:"
+          go version -m ./nomad | grep CGO
+          echo "GLIBC links:"
+          go tool nm ./nomad | grep -i glibc | cut -d @ -f 2-3 | sort --version-sort | uniq
+          echo "::group::Smoke test binary"
+          docker run --rm -v "$PWD:/src" redhat/ubi8:8.10 /src/nomad version
+
+  minimum-os-arm64:
+    # test glibc 2.28 compatibility (RHEL 8.10)
+    name: OS Compatibility (ARM64)
+    if: github.repository != 'hashicorp/nomad-enterprise' # arm runners do not support private repositories
+    needs:
+      - get-go-version
+      - get-product-version
+      - build-linux
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux]
+        goarch: [arm64]
+    runs-on: ubuntu-22.04-arm
+    steps:
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: ${{needs.get-go-version.outputs.go-version}}
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: ${{ env.PKG_NAME }}_${{ needs.get-product-version.outputs.product-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+      - name: Test binary
+        env:
+          artifact_name: ${{ env.PKG_NAME }}_${{ needs.get-product-version.outputs.product-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+        run: |
+          echo "::group::Unpack and Prep"
+          unzip "$artifact_name"
+          echo "::group::Diagnostics"
+          echo "CGO related build information:"
+          go version -m ./nomad | grep CGO
+          echo "GLIBC links:"
+          go tool nm ./nomad | grep -i glibc | cut -d @ -f 2-3 | sort --version-sort | uniq
+          echo "::group::Smoke test binary"
+          docker run --rm -v "$PWD:/src" redhat/ubi8:8.10 /src/nomad version
+
+  handle-failure:
+    needs:
+      - get-go-version
+      - get-product-version
+      - generate-metadata-file
+      - build-other
+      - build-linux
+      - build-darwin
+      - build-docker
+      - minimum-os-amd64
+      - minimum-os-arm64
+    if: always() && github.event_name == 'push' && contains(needs.*.result, 'failure')
+    uses: ./.github/workflows/test-failure-notification.yml
+    secrets: inherit
+    with:
+      actor: ${{ github.triggering_actor }}
+      git-branch: ${{ github.ref_name }}
+      workflow-run-id: ${{ github.run_id }}
+      workflow-name: ${{ github.workflow }}
+
+permissions:
+  contents: read
+  id-token: write
