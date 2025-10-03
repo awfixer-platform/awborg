@@ -1002,5 +1002,6 @@ rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
 sigs.k8s.io/kube-api-linter v0.0.0-20250908163129-65a570bd22aa h1:F3M5KADDLeuLKQqlcXxRV1q7JOMzeA5EiSyzI585Msg=
 sigs.k8s.io/kube-api-linter v0.0.0-20250908163129-65a570bd22aa/go.mod h1:Jxl3NU9lRf9WJ8dgwgF4U6tLF229jR/KEvtxSwRAKnE=
+sigs.k8s.io/kube-api-linter v0.0.0-20250924094418-502783c08f9d/go.mod h1:Jxl3NU9lRf9WJ8dgwgF4U6tLF229jR/KEvtxSwRAKnE=
 sigs.k8s.io/logtools v0.9.0 h1:IMP/HTDkfM6rg6os/tcEjmQeIHyOyu/enduM/cOPGNQ=
 sigs.k8s.io/logtools v0.9.0/go.mod h1:74Z5BP7ehrMHi/Q31W1gSf8YgwT/4GPjVH5xPSPeZA0=
