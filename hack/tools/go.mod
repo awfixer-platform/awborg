@@ -11,7 +11,7 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
-	github.com/aojea/sloppy-netparser v0.0.0-20210819225411-1b3bd8b3b975 // indirect
+	github.com/aojea/sloppy-netparser v0.0.0-20210819230639-a7bbdb117ea5 // indirect
 	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/brunoga/deep v1.2.4 // indirect
 	github.com/cespare/prettybench v0.0.0-20150116022406-03b8cfe5406c // indirect
@@ -19,8 +19,8 @@ require (
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
-	github.com/golang/glog v1.2.2 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/golang/glog v1.2.4 // indirect
 	github.com/golangci/misspell v0.6.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
