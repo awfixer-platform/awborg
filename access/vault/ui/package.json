@@ -140,7 +140,7 @@
     "filesize": "~4.2.1",
     "jsdoc-babel": "~0.5.0",
     "jsdoc-to-markdown": "~8.0.3",
-    "jsondiffpatch": "~0.4.1",
+    "jsondiffpatch": "~0.7.2",
     "jsonlint": "~1.6.3",
     "lint-staged": "~16.0.0",
     "loader.js": "~4.7.0",
@@ -161,7 +161,7 @@
     "text-encoder-lite": "2.0.0",
     "tracked-built-ins": "~3.4.0",
     "typescript": "~5.8.3",
-    "webpack": "5.94.0"
+    "webpack": "5.102.1"
   },
   "resolutions": {
     "ansi-html": "0.0.8",
