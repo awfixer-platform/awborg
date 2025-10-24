@@ -140,7 +140,7 @@
     "filesize": "~4.2.1",
     "jsdoc-babel": "~0.5.0",
     "jsdoc-to-markdown": "~8.0.3",
-    "jsondiffpatch": "~0.4.1",
+    "jsondiffpatch": "~0.7.0",
     "jsonlint": "~1.6.3",
     "lint-staged": "~16.0.0",
     "loader.js": "~4.7.0",
