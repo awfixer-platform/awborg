@@ -2655,8 +2655,8 @@ importers:
         specifier: ^0.24.0
         version: 0.24.0(rollup@4.44.0)(vite@6.3.5(@types/node@20.19.1)(jiti@1.21.7)(sass@1.89.2)(terser@5.16.1)(tsx@4.19.3))
       vite-plugin-static-copy:
-        specifier: 2.2.0
-        version: 2.2.0(vite@6.3.5(@types/node@20.19.1)(jiti@1.21.7)(sass@1.89.2)(terser@5.16.1)(tsx@4.19.3))
+        specifier: 2.3.2
+        version: 2.3.2(vite@6.3.5(@types/node@20.19.1)(jiti@1.21.7)(sass@1.89.2)(terser@5.16.1)(tsx@4.19.3))
       vite-svg-loader:
         specifier: 5.1.0
         version: 5.1.0(vue@3.5.13(typescript@5.8.3))
@@ -13207,6 +13207,10 @@ packages:
     resolution: {integrity: sha512-/bjOqmgETBYB5BoEeGVea8dmvHb2m9GLy1E9W43yeyfP6QQCZGFNa+XRceJEuDB6zqr+gKpIAmlLebMpykw/MQ==}
     engines: {node: '>=10'}
 
+  p-map@7.0.3:
+    resolution: {integrity: sha512-VkndIv2fIB99swvQoA65bm+fsmt6UNdGeIB0oxBs+WhAhdh08QA04JXpI7rbB9r08/nkbysKoya9rtDERYOYMA==}
+    engines: {node: '>=18'}
+
   p-queue@6.6.2:
     resolution: {integrity: sha512-RwFpb72c/BhQLEXIZ5K2e+AhgNVmIejGlTgiB9MzZ0e93GRvqZ7uSi0dvRF7/XIXDeNkra2fNHBxTyPDGySpjQ==}
     engines: {node: '>=8'}
@@ -15690,8 +15694,8 @@ packages:
     peerDependencies:
       vite: ^2.0.0 || ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0
 
-  vite-plugin-static-copy@2.2.0:
-    resolution: {integrity: sha512-ytMrKdR9iWEYHbUxs6x53m+MRl4SJsOSoMu1U1+Pfg0DjPeMlsRVx3RR5jvoonineDquIue83Oq69JvNsFSU5w==}
+  vite-plugin-static-copy@2.3.2:
+    resolution: {integrity: sha512-iwrrf+JupY4b9stBttRWzGHzZbeMjAHBhkrn67MNACXJVjEMRpCI10Q3AkxdBkl45IHaTfw/CNVevzQhP7yTwg==}
     engines: {node: ^18.0.0 || >=20.0.0}
     peerDependencies:
       vite: ^5.0.0 || ^6.0.0
@@ -29306,6 +29310,8 @@ snapshots:
     dependencies:
       aggregate-error: 3.1.0
 
+  p-map@7.0.3: {}
+
   p-queue@6.6.2:
     dependencies:
       eventemitter3: 4.0.7
@@ -32251,11 +32257,12 @@ snapshots:
     transitivePeerDependencies:
       - rollup
 
-  vite-plugin-static-copy@2.2.0(vite@6.3.5(@types/node@20.19.1)(jiti@1.21.7)(sass@1.89.2)(terser@5.16.1)(tsx@4.19.3)):
+  vite-plugin-static-copy@2.3.2(vite@6.3.5(@types/node@20.19.1)(jiti@1.21.7)(sass@1.89.2)(terser@5.16.1)(tsx@4.19.3)):
     dependencies:
-      chokidar: 4.0.1
+      chokidar: 4.0.3
       fast-glob: 3.3.3
       fs-extra: 11.3.0
+      p-map: 7.0.3
       picocolors: 1.1.1
       vite: 6.3.5(@types/node@20.19.1)(jiti@1.21.7)(sass@1.89.2)(terser@5.16.1)(tsx@4.19.3)
 
