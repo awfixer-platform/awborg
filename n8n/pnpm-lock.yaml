@@ -1527,8 +1527,8 @@ importers:
         specifier: 'catalog:'
         version: 3.3.8
       nodemailer:
-        specifier: 6.9.9
-        version: 6.9.9
+        specifier: 7.0.7
+        version: 7.0.7
       oauth-1.0a:
         specifier: 2.2.6
         version: 2.2.6
@@ -2854,8 +2854,8 @@ importers:
         specifier: 13.2.0
         version: 13.2.0
       nodemailer:
-        specifier: 6.9.9
-        version: 6.9.9
+        specifier: 7.0.7
+        version: 7.0.7
       otpauth:
         specifier: 9.1.1
         version: 9.1.1
@@ -12924,6 +12924,10 @@ packages:
 
   nodemailer@6.9.9:
     resolution: {integrity: sha512-dexTll8zqQoVJEZPwQAKzxxtFn0qTnjdQTchoU6Re9BUUGBJiOy3YMn/0ShTW6J5M0dfQ1NeDeRTTl4oIWgQMA==}
+    engines: {node: '>=6.0.0'}
+
+  nodemailer@7.0.7:
+    resolution: {integrity: sha512-jGOaRznodf62TVzdyhKt/f1Q/c3kYynk8629sgJHpRzGZj01ezbgMMWJSAjHADcwTKxco3B68/R+KHJY2T5BaA==}
     engines: {node: '>=6.0.0'}
 
   nodemon@3.0.1:
@@ -28983,6 +28987,8 @@ snapshots:
       vm-browserify: 1.1.2
 
   nodemailer@6.9.9: {}
+
+  nodemailer@7.0.7: {}
 
   nodemon@3.0.1:
     dependencies:
