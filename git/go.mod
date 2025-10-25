@@ -20,7 +20,7 @@ require (
 	gitea.com/lunny/dingtalk_webhook v0.0.0-20171025031554-e3534c89ef96
 	gitea.com/lunny/levelqueue v0.4.2-0.20230414023320-3c0159fe0fe4
 	github.com/42wim/httpsig v1.2.2
-	github.com/42wim/sshsig v0.0.0-20240818000253-e3a6333df815
+	github.com/42wim/sshsig 5100632e8920
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.0
 	github.com/Azure/go-ntlmssp v0.0.0-20221128193559-754e69321358
