@@ -46,7 +46,7 @@ require (
 	github.com/aerospike/aerospike-client-go/v5 v5.6.0
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190307165228-86c17b95fcd5
-	github.com/apple/foundationdb/bindings/go v0.0.0-20190411004307-cd5c9d91fad2
+	github.com/apple/foundationdb/bindings/go 68b4a495eec5
 	github.com/armon/go-metrics v0.4.1
 	github.com/armon/go-radix v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
