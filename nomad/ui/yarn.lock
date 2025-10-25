@@ -8200,9 +8200,10 @@ eslint-config-prettier@^8.3.0:
   resolved "https://registry.yarnpkg.com/eslint-config-prettier/-/eslint-config-prettier-8.10.0.tgz#3a06a662130807e2502fc3ff8b4143d8a0658e11"
   integrity sha512-SM8AMJdeQqRYT9O9zguiruQZaN7+z+E4eAP9oiLNGKMtomwaB1E9dcgUD6ZAn/eQAb52USbvezbiljfZUhbJcg==
 
-eslint-plugin-ember-a11y-testing@a11y-tool-sandbox/eslint-plugin-ember-a11y-testing#ca31c9698c7cb105f1c9761d98fcaca7d6874459:
+eslint-plugin-ember-a11y-testing@a11y-tool-sandbox/eslint-plugin-ember-a11y-testing#fa252e789d0b46c5e7ce5b5786c66c5e2804d681:
   version "0.0.0"
-  resolved "https://codeload.github.com/a11y-tool-sandbox/eslint-plugin-ember-a11y-testing/tar.gz/ca31c9698c7cb105f1c9761d98fcaca7d6874459"
+  uid fa252e789d0b46c5e7ce5b5786c66c5e2804d681
+  resolved "https://codeload.github.com/a11y-tool-sandbox/eslint-plugin-ember-a11y-testing/tar.gz/fa252e789d0b46c5e7ce5b5786c66c5e2804d681"
   dependencies:
     requireindex "~1.1.0"
 
