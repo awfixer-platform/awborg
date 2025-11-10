@@ -1605,8 +1605,8 @@ importers:
         specifier: 'catalog:'
         version: 10.0.0
       validator:
-        specifier: 13.7.0
-        version: 13.7.0
+        specifier: 13.15.20
+        version: 13.15.20
       ws:
         specifier: '>=8.17.1'
         version: 8.17.1
@@ -15667,6 +15667,10 @@ packages:
     resolution: {integrity: sha512-jOWVmzVceKlVVdwjNSenT4PbGghU0SBIizAev8ofZVgivk/TVHXSbNL8LP6M3spZvkR9/QolkyJavGSX5Cs0UA==}
     engines: {node: '>=10'}
 
+  validator@13.15.20:
+    resolution: {integrity: sha512-KxPOq3V2LmfQPP4eqf3Mq/zrT0Dqp2Vmx2Bn285LwVahLc+CsxOM0crBHczm8ijlcjZ0Q5Xd6LW3z3odTPnlrw==}
+    engines: {node: '>= 0.10'}
+
   validator@13.7.0:
     resolution: {integrity: sha512-nYXQLCBkpJ8X6ltALua9dRrZDHVYxjJ1wgskNt1lH9fzGjs3tgojGSCBjmEPwkWS1y29+DrizMTW19Pr9uB2nw==}
     engines: {node: '>= 0.10'}
@@ -15861,8 +15865,8 @@ packages:
   vue-component-type-helpers@2.2.10:
     resolution: {integrity: sha512-iDUO7uQK+Sab2tYuiP9D1oLujCWlhHELHMgV/cB13cuGbG4qwkLHvtfWb6FzvxrIOPDnU0oHsz2MlQjhYDeaHA==}
 
-  vue-component-type-helpers@3.1.1:
-    resolution: {integrity: sha512-B0kHv7qX6E7+kdc5nsaqjdGZ1KwNKSUQDWGy7XkTYT7wFsOpkEyaJ1Vq79TjwrrtuLRgizrTV7PPuC4rRQo+vw==}
+  vue-component-type-helpers@3.1.3:
+    resolution: {integrity: sha512-V1dOD8XYfstOKCnXbWyEJIrhTBMwSyNjv271L1Jlx9ExpNlCSuqOs3OdWrGJ0V544zXufKbcYabi/o+gK8lyfQ==}
 
   vue-demi@0.14.10:
     resolution: {integrity: sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==}
@@ -21374,7 +21378,7 @@ snapshots:
       ts-dedent: 2.2.0
       type-fest: 2.19.0
       vue: 3.5.13(typescript@5.8.3)
-      vue-component-type-helpers: 3.1.1
+      vue-component-type-helpers: 3.1.3
 
   '@stylistic/eslint-plugin@5.0.0(eslint@9.29.0(jiti@1.21.7))':
     dependencies:
@@ -23095,6 +23099,14 @@ snapshots:
       axios: 1.8.3
       is-retry-allowed: 2.2.0
 
+  axios@1.10.0:
+    dependencies:
+      follow-redirects: 1.15.9(debug@4.3.6)
+      form-data: 4.0.4
+      proxy-from-env: 1.1.0
+    transitivePeerDependencies:
+      - debug
+
   axios@1.10.0(debug@4.3.6):
     dependencies:
       follow-redirects: 1.15.9(debug@4.3.6)
@@ -23113,7 +23125,7 @@ snapshots:
 
   axios@1.10.0(debug@4.4.1):
     dependencies:
-      follow-redirects: 1.15.9(debug@4.3.6)
+      follow-redirects: 1.15.9(debug@4.4.1)
       form-data: 4.0.4
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
@@ -23450,7 +23462,7 @@ snapshots:
 
   bundlemon@3.1.0(typescript@5.8.3):
     dependencies:
-      axios: 1.10.0(debug@4.4.1)
+      axios: 1.10.0
       axios-retry: 4.5.0(axios@1.10.0)
       brotli-size: 4.0.0
       bundlemon-utils: 2.0.1
@@ -26542,7 +26554,7 @@ snapshots:
 
   infisical-node@1.3.0:
     dependencies:
-      axios: 1.10.0(debug@4.4.1)
+      axios: 1.10.0
       dotenv: 16.3.1
       tweetnacl: 1.0.3
       tweetnacl-util: 0.15.1
@@ -27710,7 +27722,7 @@ snapshots:
       '@langchain/groq': 0.2.3(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@1.30.1(@opentelemetry/api@1.9.0))(openai@5.8.1(ws@8.18.2)(zod@3.25.67)))(encoding@0.1.13)
       '@langchain/mistralai': 0.2.1(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@1.30.1(@opentelemetry/api@1.9.0))(openai@5.8.1(ws@8.18.2)(zod@3.25.67)))(zod@3.25.67)
       '@langchain/ollama': 0.2.3(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@1.30.1(@opentelemetry/api@1.9.0))(openai@5.8.1(ws@8.18.2)(zod@3.25.67)))
-      axios: 1.10.0(debug@4.4.1)
+      axios: 1.10.0
       cheerio: 1.0.0
       handlebars: 4.7.8
     transitivePeerDependencies:
@@ -29721,7 +29733,7 @@ snapshots:
 
   posthog-node@3.2.1:
     dependencies:
-      axios: 1.10.0(debug@4.4.1)
+      axios: 1.10.0
       rusha: 0.8.14
     transitivePeerDependencies:
       - debug
@@ -30407,7 +30419,7 @@ snapshots:
 
   retry-axios@2.6.0(axios@1.10.0):
     dependencies:
-      axios: 1.10.0(debug@4.4.1)
+      axios: 1.10.0
 
   retry-request@7.0.2(encoding@0.1.13):
     dependencies:
@@ -30912,7 +30924,7 @@ snapshots:
       asn1.js: 5.4.1
       asn1.js-rfc2560: 5.0.1(asn1.js@5.4.1)
       asn1.js-rfc5280: 3.0.0
-      axios: 1.10.0(debug@4.4.1)
+      axios: 1.10.0
       big-integer: 1.6.52
       bignumber.js: 9.1.2
       binascii: 0.0.2
@@ -32205,6 +32217,8 @@ snapshots:
 
   valid-data-url@3.0.1: {}
 
+  validator@13.15.20: {}
+
   validator@13.7.0: {}
 
   vary@1.1.2: {}
@@ -32389,7 +32403,7 @@ snapshots:
 
   vue-component-type-helpers@2.2.10: {}
 
-  vue-component-type-helpers@3.1.1: {}
+  vue-component-type-helpers@3.1.3: {}
 
   vue-demi@0.14.10(vue@3.5.13(typescript@5.8.3)):
     dependencies:
